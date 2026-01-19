@@ -1,0 +1,206 @@
+.
+├── config
+│   ├── cfg_coco.py
+│   ├── cfg_odvg.py
+│   ├── coco2017_label_map.json
+│   ├── datasets_mixed_odvg.json
+│   ├── datasets_od_example.json
+│   ├── datasets_vg_example.json
+│   └── instances_val2017.json
+├── data
+│   └── sirst
+│       ├── annotations
+│       │   ├── annotations.json
+│       │   ├── my_label_map.json
+│       │   ├── test.json
+│       │   ├── train.json
+│       │   ├── train.jsonl
+│       │   ├── val.json
+│       │   └── val.jsonl
+│       ├── test
+│       │   ├── Misc_110.png
+│       │   ├── ...
+│       │  
+│       └── val
+│           ├── Misc_103.png
+│           ├── ...
+├── datasets
+│   ├── coco_eval.py
+│   ├── cocogrounding_eval.py
+│   ├── coco_panoptic.py
+│   ├── coco.py
+│   ├── dataset.py
+│   ├── data_util.py
+│   ├── __init__.py
+│   ├── odvg.py
+│   ├── panoptic_eval.py
+│   ├── random_crop.py
+│   ├── sltransform.py
+│   └── transforms.py
+├── examples
+│   └── Training_Script_example.ipynb
+├── figs
+│   ├── cat-1.8m.jpg
+│   ├── cat-coco.jpg
+│   ├── cat-official.jpg
+│   ├── cute_dino.png
+│   ├── dog-1.8m.jpg
+│   ├── dog_cat.jpeg
+│   ├── dog-coco.jpg
+│   └── dog-official.jpg
+├── groundingdino
+│   └── util
+│       ├── box_ops.py
+│       ├── get_tokenlizer.py
+│       ├── inference.py
+│       ├── __init__.py
+│       ├── logger.py
+│       ├── misc.py
+│       ├── slconfig.py
+│       ├── slio.py
+│       ├── time_counter.py
+│       ├── utils.py
+│       ├── visualizer.py
+│       └── vl_utils.py
+├── models
+│   ├── GroundingDINO
+│   │   ├── backbone
+│   │   │   ├── backbone.py
+│   │   │   ├── __init__.py
+│   │   │   ├── position_encoding.py
+│   │   │   └── swin_transformer.py
+│   │   ├── csrc
+│   │   │   ├── MsDeformAttn
+│   │   │   │   ├── ms_deform_attn_cpu.cpp
+│   │   │   │   ├── ms_deform_attn_cpu.h
+│   │   │   │   ├── ms_deform_attn_cuda.cu
+│   │   │   │   ├── ms_deform_attn_cuda.h
+│   │   │   │   ├── ms_deform_attn.h
+│   │   │   │   └── ms_deform_im2col_cuda.cuh
+│   │   │   ├── cuda_version.cu
+│   │   │   └── vision.cpp
+│   │   ├── ops
+│   │   │   ├── build
+│   │   │   │   ├── lib.linux-x86_64-cpython-39
+│   │   │   │   │   ├── functions
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── ms_deform_attn_func.py
+│   │   │   │   │   ├── modules
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── ms_deform_attn.py
+│   │   │   │   │   └── MultiScaleDeformableAttention.cpython-39-x86_64-linux-gnu.so
+│   │   │   │   └── temp.linux-x86_64-cpython-39
+│   │   │   │       └── home
+│   │   │   │           └── sisu
+│   │   │   │               └── hc
+│   │   │   │                   └── projects
+│   │   │   │                       └── Open-GroundingDino
+│   │   │   │                           └── models
+│   │   │   │                               └── GroundingDINO
+│   │   │   │                                   └── ops
+│   │   │   │                                       └── src
+│   │   │   │                                           ├── cpu
+│   │   │   │                                           │   └── ms_deform_attn_cpu.o
+│   │   │   │                                           ├── cuda
+│   │   │   │                                           │   └── ms_deform_attn_cuda.o
+│   │   │   │                                           └── vision.o
+│   │   │   ├── functions
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── ms_deform_attn_func.py
+│   │   │   ├── modules
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── ms_deform_attn.py
+│   │   │   ├── MultiScaleDeformableAttention.egg-info
+│   │   │   │   ├── dependency_links.txt
+│   │   │   │   ├── PKG-INFO
+│   │   │   │   ├── SOURCES.txt
+│   │   │   │   └── top_level.txt
+│   │   │   ├── src
+│   │   │   │   ├── cpu
+│   │   │   │   │   ├── ms_deform_attn_cpu.cpp
+│   │   │   │   │   └── ms_deform_attn_cpu.h
+│   │   │   │   ├── cuda
+│   │   │   │   │   ├── ms_deform_attn_cuda.cu
+│   │   │   │   │   ├── ms_deform_attn_cuda.h
+│   │   │   │   │   └── ms_deform_im2col_cuda.cuh
+│   │   │   │   ├── ms_deform_attn.h
+│   │   │   │   └── vision.cpp
+│   │   │   ├── setup.py
+│   │   │   └── test.py
+│   │   ├── bertwarper.py
+│   │   ├── fuse_modules.py
+│   │   ├── groundingdino.py
+│   │   ├── __init__.py
+│   │   ├── matcher.py
+│   │   ├── ms_deform_attn.py
+│   │   ├── transformer.py
+│   │   ├── transformer_vanilla.py
+│   │   └── utils.py
+│   ├── __init__.py
+│   └── registry.py
+├── tools
+│   ├── benchmark.py
+│   ├── coco2odvg.py
+│   ├── flickr30ke2odvg.py
+│   ├── grit2odvg.py
+│   ├── GroundingDINO_SwinB_cfg.py
+│   ├── GroundingDINO_SwinT_OGC.py
+│   ├── inference_on_a_image.py
+│   └── v3det2odvg.py
+├── training_output
+│   ├── eval
+│   │   ├── 000.pth
+│   │   └── latest.pth
+│   ├── checkpoint0000.pth
+│   ├── ...
+│   ├── config_args_all.json
+│   ├── config_args_raw.json
+│   ├── config_cfg.py
+│   ├── info.txt
+│   ├── info.txt.rank1
+│   ├── info.txt.rank2
+│   ├── info.txt.rank3
+│   └── log.txt
+├── util
+│   ├── box_loss.py
+│   ├── box_ops.py
+│   ├── coco_id2name.json
+│   ├── get_param_dicts.py
+│   ├── get_tokenlizer.py
+│   ├── __init__.py
+│   ├── logger.py
+│   ├── misc.py
+│   ├── plot_utils.py
+│   ├── slconfig.py
+│   ├── slio.py
+│   ├── static_data_path.py
+│   ├── time_counter.py
+│   ├── utils.py
+│   ├── visualizer.py
+│   └── vis_utils.py
+├── weights
+│   ├── bert-base-uncased
+│   │   ├── config.json
+│   │   ├── model.safetensors
+│   │   ├── pytorch_model.bin
+│   │   ├── special_tokens_map.json
+│   │   ├── tokenizer_config.json
+│   │   ├── tokenizer.json
+│   │   └── vocab.txt
+│   ├── groundingdino_swinb_cogcoor.pth
+│   └── groundingdino_swint_ogc.pth
+├── data_format.md
+├── engine.py
+├── engine.py.backup
+├── LICENSE
+├── main copy.py
+├── main.py
+├── project_structure.txt
+├── README.md
+├── requirements.txt
+├── test_dist.sh
+├── test_slurm.sh
+├── train_dist.sh
+└── train_slurm.sh
+
+46 directories, 609 files
