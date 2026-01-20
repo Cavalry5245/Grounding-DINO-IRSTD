@@ -120,6 +120,10 @@ def get_args_parser():
                         ],
                         help='Layers to unfreeze (keep fully trainable)')
 
+    # Save options
+    parser.add_argument('--save_best_only', action='store_true', default=True,
+                        help='Only save the best model checkpoint')
+
     return parser
 
 
@@ -328,7 +332,8 @@ def apply_lora(model, args, logger=None):
     
     return model
 
-def save_lora_model(model, output_dir, epoch=None, optimizer=None, lr_scheduler=None, args=None):
+def save_lora_model(model, output_dir, epoch=None, optimizer=None, lr_scheduler=None, args=None, 
+                    map_score=None, ap50_score=None):
     """Save LoRA model using peft's save method."""
     save_dir = Path(output_dir)
     
@@ -353,6 +358,10 @@ def save_lora_model(model, output_dir, epoch=None, optimizer=None, lr_scheduler=
         training_state['lr_scheduler'] = lr_scheduler.state_dict()
     if args is not None:
         training_state['args'] = vars(args)
+    if map_score is not None:
+        training_state['mAP'] = map_score
+    if ap50_score is not None:
+        training_state['AP50'] = ap50_score
     
     torch.save(training_state, checkpoint_dir / "training_state.pth")
     
@@ -662,44 +671,6 @@ def main(args):
         if not args.onecyclelr:
             lr_scheduler.step()
 
-        # Save checkpoint
-        if args.output_dir:
-            if utils.is_main_process():
-                if args.use_lora:
-                    # 保存 LoRA checkpoint (peft 格式)
-                    save_lora_model(
-                        model_without_ddp, args.output_dir,
-                        epoch=None,  # latest checkpoint
-                        optimizer=optimizer,
-                        lr_scheduler=lr_scheduler,
-                        args=args
-                    )
-                    
-                    # 定期保存带 epoch 的 checkpoint
-                    if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
-                        save_lora_model(
-                            model_without_ddp, args.output_dir,
-                            epoch=epoch,
-                            optimizer=optimizer,
-                            lr_scheduler=lr_scheduler,
-                            args=args
-                        )
-                else:
-                    # 原始保存逻辑
-                    checkpoint_paths = [output_dir / 'checkpoint.pth']
-                    if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
-                        checkpoint_paths.append(output_dir / f'checkpoint{epoch:04}.pth')
-                    
-                    for checkpoint_path in checkpoint_paths:
-                        weights = {
-                            'model': model_without_ddp.state_dict(),
-                            'optimizer': optimizer.state_dict(),
-                            'lr_scheduler': lr_scheduler.state_dict(),
-                            'epoch': epoch,
-                            'args': args,
-                        }
-                        utils.save_on_master(weights, checkpoint_path)
-
         # Evaluation
         test_stats, coco_evaluator = evaluate(
             model, criterion, postprocessors, data_loader_val, base_ds, device,
@@ -707,37 +678,129 @@ def main(args):
             logger=(logger if args.save_log else None)
         )
 
-        map_regular = test_stats['coco_eval_bbox'][0]
-        _isbest = best_map_holder.update(map_regular, epoch, is_ema=False)
+        # 获取 mAP 和 AP50
+        # coco_eval_bbox 包含: [AP, AP50, AP75, APs, APm, APl, AR1, AR10, AR100, ARs, ARm, ARl]
+        map_regular = test_stats['coco_eval_bbox'][0]  # mAP (AP@[.5:.95])
+        ap50 = test_stats['coco_eval_bbox'][1]  # AP@50
         
-        if _isbest and utils.is_main_process():
-            if args.use_lora:
-                # 保存最佳 LoRA checkpoint
-                best_dir = output_dir / "lora_checkpoint_best"
-                best_dir.mkdir(parents=True, exist_ok=True)
-                model_without_ddp.save_pretrained(best_dir)
-                torch.save({
-                    'epoch': epoch,
-                    'optimizer': optimizer.state_dict(),
-                    'lr_scheduler': lr_scheduler.state_dict(),
-                    'map': map_regular,
-                    'args': vars(args),
-                }, best_dir / "training_state.pth")
-                logger.info(f"Saved best LoRA checkpoint at epoch {epoch} with mAP {map_regular:.4f}")
-            else:
-                checkpoint_path = output_dir / 'checkpoint_best_regular.pth'
-                utils.save_on_master({
-                    'model': model_without_ddp.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'lr_scheduler': lr_scheduler.state_dict(),
-                    'epoch': epoch,
-                    'args': args,
-                }, checkpoint_path)
+        _isbest = best_map_holder.update(map_regular, epoch, is_ema=False)
+
+        # Save checkpoint
+        if args.output_dir:
+            if utils.is_main_process():
+                save_best_only = getattr(args, 'save_best_only', False)
+                
+                if args.use_lora:
+                    # LoRA 模式
+                    if save_best_only:
+                        # 只保存最佳模型
+                        if _isbest:
+                            best_dir = output_dir / "lora_checkpoint_best"
+                            best_dir.mkdir(parents=True, exist_ok=True)
+                            model_without_ddp.save_pretrained(best_dir)
+                            torch.save({
+                                'epoch': epoch,
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': vars(args),
+                            }, best_dir / "training_state.pth")
+                            logger.info(f"Saved best LoRA checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                    else:
+                        # 保存 latest checkpoint
+                        save_lora_model(
+                            model_without_ddp, args.output_dir,
+                            epoch=None,  # latest checkpoint
+                            optimizer=optimizer,
+                            lr_scheduler=lr_scheduler,
+                            args=args,
+                            map_score=map_regular,
+                            ap50_score=ap50
+                        )
+                        
+                        # 定期保存带 epoch 的 checkpoint
+                        if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
+                            save_lora_model(
+                                model_without_ddp, args.output_dir,
+                                epoch=epoch,
+                                optimizer=optimizer,
+                                lr_scheduler=lr_scheduler,
+                                args=args,
+                                map_score=map_regular,
+                                ap50_score=ap50
+                            )
+                        
+                        # 保存最佳模型
+                        if _isbest:
+                            best_dir = output_dir / "lora_checkpoint_best"
+                            best_dir.mkdir(parents=True, exist_ok=True)
+                            model_without_ddp.save_pretrained(best_dir)
+                            torch.save({
+                                'epoch': epoch,
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': vars(args),
+                            }, best_dir / "training_state.pth")
+                            logger.info(f"Saved best LoRA checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                else:
+                    # 非 LoRA 模式
+                    if save_best_only:
+                        # 只保存最佳模型
+                        if _isbest:
+                            checkpoint_path = output_dir / 'checkpoint_best.pth'
+                            utils.save_on_master({
+                                'model': model_without_ddp.state_dict(),
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'epoch': epoch,
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': args,
+                            }, checkpoint_path)
+                            logger.info(f"Saved best checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                    else:
+                        # 原始保存逻辑
+                        checkpoint_paths = [output_dir / 'checkpoint.pth']
+                        if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
+                            checkpoint_paths.append(output_dir / f'checkpoint{epoch:04}.pth')
+                        
+                        for checkpoint_path in checkpoint_paths:
+                            weights = {
+                                'model': model_without_ddp.state_dict(),
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'epoch': epoch,
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': args,
+                            }
+                            utils.save_on_master(weights, checkpoint_path)
+                        
+                        # 保存最佳模型
+                        if _isbest:
+                            checkpoint_path = output_dir / 'checkpoint_best_regular.pth'
+                            utils.save_on_master({
+                                'model': model_without_ddp.state_dict(),
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'epoch': epoch,
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': args,
+                            }, checkpoint_path)
+                            logger.info(f"Saved best checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
 
         log_stats = {
             **{f'train_{k}': v for k, v in train_stats.items()},
             **{f'test_{k}': v for k, v in test_stats.items()},
         }
+
+        # 添加最佳指标到日志
+        log_stats['best_mAP'] = best_map_holder.best_all.best_res
+        log_stats['best_epoch'] = best_map_holder.best_all.best_ep
 
         try:
             log_stats.update({'now_time': str(datetime.datetime.now())})
@@ -769,8 +832,19 @@ def main(args):
         logger.info("Merging LoRA weights into base model...")
         merged_model = model_without_ddp.merge_and_unload()
         merged_path = output_dir / "merged_model.pth"
-        torch.save({'model': merged_model.state_dict()}, merged_path)
+        torch.save({
+            'model': merged_model.state_dict(),
+            'best_mAP': best_map_holder.best_all.best_res,
+            'best_epoch': best_map_holder.best_all.best_ep,
+        }, merged_path)
         logger.info(f"Merged model saved to {merged_path}")
+
+    # 打印最佳结果总结
+    if utils.is_main_process():
+        logger.info("=" * 50)
+        logger.info("Training completed!")
+        logger.info(f"Best mAP: {best_map_holder.best_all.best_res:.4f} at epoch {best_map_holder.best_all.best_ep}")
+        logger.info("=" * 50)
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))

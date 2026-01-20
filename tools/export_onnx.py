@@ -159,6 +159,22 @@ def export_to_onnx(config_path, checkpoint_path, output_path,
     print(f"[2/5] Building model...")
     model, _, _ = build_model(args)
 
+    # Disable checkpoint during ONNX export to prevent RuntimeError
+    if hasattr(model, 'backbone') and hasattr(model.backbone, 'use_checkpoint'):
+        model.backbone.use_checkpoint = False
+        print(f"   Disabled checkpoint in backbone for ONNX export")
+
+    # Also disable checkpoint in Swin Transformer layers if present
+    def disable_checkpoint_recursive(module):
+        for child_name, child in module.named_children():
+            if hasattr(child, 'use_checkpoint'):
+                child.use_checkpoint = False
+                print(f"   Disabled checkpoint in {child_name}")
+            disable_checkpoint_recursive(child)
+
+    if hasattr(model, 'backbone'):
+        disable_checkpoint_recursive(model.backbone)
+
     # Load checkpoint
     print(f"[3/5] Loading checkpoint from: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
