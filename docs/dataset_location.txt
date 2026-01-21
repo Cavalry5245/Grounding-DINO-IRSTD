@@ -1,0 +1,4 @@
+SIRST:
+image:
+masks:
+

@@ -8,38 +8,23 @@ from tqdm import tqdm
 import matplotlib.colors as mcolors
 
 # ================= 配置区域 =================
-# 1. 数据路径
-GT_FOLDER = 'dataset/NUDT-SIRST/masks'       # Mask 文件夹路径
+# 1. 数据路径 - 改为使用COCO格式的JSON文件
+GT_JSON_PATH = 'data/sirst/annotations/test.json'  # GT的COCO格式JSON文件路径
 
 # 2. 不同方法的预测结果 (方法名称: JSON文件路径)
 METHODS = {
-    'original': 'test_output/Swin_T/results_0114exp2/IRDST/instances_results.json',
+    'original': 'test_output/Swin_T/results_0121exp1/SIRST/instances_results.json',
 }
 
 # 3. 输出路径
-OUTPUT_PLOT_PATH = 'figs/pr_curve/0114exp1/pr_curve_IRDST_0114exp2.png'
+OUTPUT_PLOT_PATH = 'figs/pr_curve/0121exp1/pr_curve_SIRST_0121exp1.png'
 # 4. 评估标准
 CENTER_HIT = True   # True: 使用中心点命中 (推荐用于红外小目标)
 IOU_THRESH = 0.1    # 如果 CENTER_HIT=False, 则使用此 IoU 阈值
 
 # 5. 图表标题
-CHART_TITLE = 'Precision-Recall Curve (IRDST-1)'
+CHART_TITLE = 'Precision-Recall Curve (SIRST)'
 # ===========================================
-
-
-def get_gt_boxes_from_mask(mask_path):
-    """从Mask读取GT框"""
-    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-    if mask is None:
-        return []
-    _, thresh = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
-    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(thresh, connectivity=8)
-    gt_boxes = []
-    for i in range(1, num_labels):
-        x, y, w, h = stats[i, cv2.CC_STAT_LEFT], stats[i, cv2.CC_STAT_TOP], \
-                     stats[i, cv2.CC_STAT_WIDTH], stats[i, cv2.CC_STAT_HEIGHT]
-        gt_boxes.append([x, y, x + w, y + h])
-    return gt_boxes
 
 
 def is_match(pred_box, gt_box):
@@ -68,30 +53,10 @@ def normalize_filename(filename):
 
 
 def compute_ap(recalls, precisions):
-    # """
-    # 计算AP (Average Precision) - 使用全点插值法 (VOC2010+ 标准)
-    # """
-    # # 添加哨兵值
-    # recalls = np.concatenate([[0], recalls, [1]])
-    # precisions = np.concatenate([[0], precisions, [0]])
-    
-    # # 确保precision是单调递减的 (从右向左取最大值)
-    # for i in range(len(precisions) - 2, -1, -1):
-    #     precisions[i] = max(precisions[i], precisions[i + 1])
-    
-    # # 找到recall变化的点
-    # recall_change_indices = np.where(recalls[1:] != recalls[:-1])[0]
-    
-    # # 计算AP (曲线下面积)
-    # ap = np.sum((recalls[recall_change_indices + 1] - recalls[recall_change_indices]) * 
-    #             precisions[recall_change_indices + 1])
-    
     """
     计算 AP：既然 recalls 和 precisions 已经是插值过的单调序列，
     直接计算曲线下面积即可。
     """
-    # 确保 recalls 是升序
-    # 计算相邻 recall 之间的差异，乘以对应的 precision
     ap = 0.0
     for i in range(1, len(recalls)):
         ap += (recalls[i] - recalls[i-1]) * precisions[i]
@@ -102,7 +67,7 @@ def compute_ap(recalls, precisions):
 def load_predictions(pred_json_path):
     """
     加载预测结果，支持多种JSON格式
-    返回: list of dict, 每个dict包含 {'image_id': str, 'box': [x1,y1,x2,y2], 'score': float}
+    返回: list of dict, 每个dict包含 {'image_id': str/int, 'box': [x1,y1,x2,y2], 'score': float}
     """
     with open(pred_json_path, 'r') as f:
         data = json.load(f)
@@ -138,10 +103,8 @@ def load_predictions(pred_json_path):
                 x, y, w, h = item['bbox']
                 box = [x, y, x + w, y + h]
                 score = item.get('score', 1.0)
-                # image_id 可能是整数，需要额外处理
+                # image_id 保持原样（可能是整数）
                 image_id = item['image_id']
-                if isinstance(image_id, str):
-                    image_id = normalize_filename(image_id)
                 
                 all_preds.append({
                     'image_id': image_id,
@@ -166,7 +129,7 @@ def load_predictions(pred_json_path):
     return all_preds
 
 
-def calculate_pr_for_method(method_name, pred_json_path, gt_dict_original, total_gt_count):
+def calculate_pr_for_method(method_name, pred_json_path, gt_dict_original, total_gt_count, id_to_key_mapping):
     """为单个方法计算PR曲线数据"""
     print(f"\n📊 处理方法: {method_name}")
     print(f"   加载预测文件: {pred_json_path}")
@@ -198,9 +161,12 @@ def calculate_pr_for_method(method_name, pred_json_path, gt_dict_original, total
         
         is_tp = 0  # 默认为 False Positive
         
+        # 使用映射将image_id转换为gt_dict的key
+        gt_key = id_to_key_mapping.get(img_id)
+        
         # 如果这张图里有GT
-        if img_id in gt_dict:
-            gt_info = gt_dict[img_id]
+        if gt_key is not None and gt_key in gt_dict:
+            gt_info = gt_dict[gt_key]
             
             # 尝试匹配该图中尚未被匹配的 GT
             best_match_idx = -1
@@ -227,20 +193,16 @@ def calculate_pr_for_method(method_name, pred_json_path, gt_dict_original, total
     raw_recalls = tp_cumsum / total_gt_count
     raw_precisions = tp_cumsum / (tp_cumsum + fp_cumsum)
     
-    # recalls = tp_cumsum / total_gt_count
-    # precisions = tp_cumsum / (tp_cumsum + fp_cumsum + 1e-6)
     recalls = np.concatenate(([0.0], raw_recalls))
     precisions = np.concatenate(([1.0], raw_precisions))
     for i in range(len(precisions) - 2, -1, -1):
         precisions[i] = np.maximum(precisions[i], precisions[i + 1])
     
     # 计算 AP (Average Precision) - 曲线下面积
-    # ap = np.trapz(precisions, recalls)
     ap = compute_ap(recalls, precisions)
     print(f"方法 {method_name} 的 AP: {ap:.4f}")
 
     # 计算 F1-score (F1-score 是 precision 和 recall 的调和平均数)
-    # f1_scores = 2 * (precisions * recalls) / (precisions + recalls + 1e-8)  # 添加小量避免除零
     f1_scores = 2 * (raw_precisions * raw_recalls) / (raw_precisions + raw_recalls + 1e-8)
     
     # 找到 F1-score 最大值及其索引
@@ -274,45 +236,71 @@ def calculate_pr_for_method(method_name, pred_json_path, gt_dict_original, total
     }
 
 
-def load_ground_truth():
-    """加载所有GT数据"""
-    print("🚀 正在加载 Ground Truth 数据...")
+def load_ground_truth_from_json():
+    """从COCO格式的JSON文件加载GT数据"""
+    print("🚀 正在从JSON文件加载 Ground Truth 数据...")
     
-    if not os.path.exists(GT_FOLDER):
-        raise FileNotFoundError(f"GT文件夹不存在: {GT_FOLDER}")
+    if not os.path.exists(GT_JSON_PATH):
+        raise FileNotFoundError(f"GT JSON文件不存在: {GT_JSON_PATH}")
     
+    with open(GT_JSON_PATH, 'r') as f:
+        coco_data = json.load(f)
+    
+    # 创建 image_id 到 image_info 的映射
+    images_info = {}
+    for img in coco_data['images']:
+        images_info[img['id']] = {
+            'file_name': normalize_filename(img['file_name']),
+            'width': img.get('width'),
+            'height': img.get('height')
+        }
+    
+    # 创建 gt_dict，以 image_id 为 key
     gt_dict = {}
     total_gt_count = 0
-    gt_files = [f for f in os.listdir(GT_FOLDER) if f.endswith(('.png', '.jpg', '.bmp'))]
     
-    if len(gt_files) == 0:
-        raise ValueError(f"GT文件夹中没有找到图像文件: {GT_FOLDER}")
+    # 按 image_id 组织 annotations
+    for ann in coco_data['annotations']:
+        image_id = ann['image_id']
+        
+        if image_id not in gt_dict:
+            gt_dict[image_id] = {
+                'boxes': [],
+                'matched': []
+            }
+        
+        # COCO bbox 格式是 [x, y, width, height]，转换为 [x1, y1, x2, y2]
+        x, y, w, h = ann['bbox']
+        box = [x, y, x + w, y + h]
+        
+        gt_dict[image_id]['boxes'].append(box)
+        gt_dict[image_id]['matched'].append(False)
+        total_gt_count += 1
     
-    print(f"   找到 {len(gt_files)} 个mask文件")
-    
-    for filename in tqdm(gt_files, desc="   加载GT"):
-        boxes = get_gt_boxes_from_mask(os.path.join(GT_FOLDER, filename))
-        # 统一使用标准化的文件名作为key
-        key = normalize_filename(filename)
-        gt_dict[key] = {
-            'boxes': boxes,
-            'matched': [False] * len(boxes)
-        }
-        total_gt_count += len(boxes)
+    # 创建 image_id 到 key 的映射（用于匹配预测结果）
+    # 预测结果的 image_id 可能是整数或字符串文件名
+    id_to_key_mapping = {}
+    for img_id, img_info in images_info.items():
+        # 整数 image_id 映射
+        id_to_key_mapping[img_id] = img_id
+        # 文件名映射（用于某些预测格式）
+        id_to_key_mapping[img_info['file_name']] = img_id
     
     # 统计有目标的图像数量
-    images_with_targets = sum(1 for v in gt_dict.values() if len(v['boxes']) > 0)
+    images_with_targets = len(gt_dict)
+    total_image_count = len(images_info)
     
+    print(f"   ✅ 加载了 {total_image_count} 张图像的信息")
     print(f"   ✅ 总共 {total_gt_count} 个GT目标")
-    print(f"   ✅ {images_with_targets}/{len(gt_files)} 张图像包含目标")
+    print(f"   ✅ {images_with_targets}/{total_image_count} 张图像包含目标")
     
-    return gt_dict, total_gt_count, len(gt_files)
+    return gt_dict, total_gt_count, total_image_count, id_to_key_mapping, images_info
 
 
 def calculate_pr_curve():
     """计算并绘制多个方法的PR曲线对比图"""
-    # 加载GT数据
-    gt_dict, total_gt_count, total_image_count = load_ground_truth()
+    # 从JSON加载GT数据
+    gt_dict, total_gt_count, total_image_count, id_to_key_mapping, images_info = load_ground_truth_from_json()
     
     if total_gt_count == 0:
         print("❌ 错误: 没有找到任何GT目标")
@@ -324,7 +312,7 @@ def calculate_pr_curve():
     for method_name, pred_json_path in METHODS.items():
         if os.path.exists(pred_json_path):
             result = calculate_pr_for_method(
-                method_name, pred_json_path, gt_dict, total_gt_count
+                method_name, pred_json_path, gt_dict, total_gt_count, id_to_key_mapping
             )
             if result is not None:
                 pr_data[method_name] = result
@@ -406,7 +394,8 @@ def calculate_pr_curve():
             'center_hit': CENTER_HIT,
             'iou_thresh': IOU_THRESH,
             'total_gt_count': total_gt_count,
-            'total_image_count': total_image_count
+            'total_image_count': total_image_count,
+            'gt_json_path': GT_JSON_PATH
         },
         'methods': {}
     }

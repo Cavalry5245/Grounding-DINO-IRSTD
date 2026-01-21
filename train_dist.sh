@@ -14,7 +14,7 @@ PORT=${PORT:-29501}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 
 # Model paths
-PRETRAIN_MODEL_PATH=${PRETRAIN_MODEL_PATH:-"/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth"}
+PRETRAIN_MODEL_PATH=${PRETRAIN_MODEL_PATH:-"/media/sisu/X/hc/projects/Open-GroundingDino/training_output/0121_exp1/checkpoint_best.pth"}
 TEXT_ENCODER_TYPE=${TEXT_ENCODER_TYPE:-"/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased"}
 
 # LoRA parameters (using peft)
@@ -84,4 +84,4 @@ fi
 echo "Executing: $CMD"
 eval $CMD
 
-# CUDA_VISIBLE_DEVICES=0 bash train_dist.sh 1 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/0120_exp1
+# CUDA_VISIBLE_DEVICES=2,3 bash train_dist.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/0121_exp1

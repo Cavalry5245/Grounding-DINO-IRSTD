@@ -220,8 +220,8 @@ class FeatureFusionModule(nn.Module):
         
         # 可学习的融合权重
         # sigmoid(-3) ≈ 0.05，即初期 swin 占 95%，HR 占 5%，原来是0.5
-        self.alpha_0 = nn.Parameter(torch.tensor(-3.0))
-        self.alpha_1 = nn.Parameter(torch.tensor(-3.0))
+        self.alpha_0 = nn.Parameter(torch.tensor(-1.0))
+        self.alpha_1 = nn.Parameter(torch.tensor(-1.0))
     
     def forward(self, swin_features: Dict, hr_features: Dict) -> Dict:
         """
@@ -229,15 +229,15 @@ class FeatureFusionModule(nn.Module):
         hr_features: {'hr_1': Tensor, 'hr_2': Tensor}
         """
 #----- 统计迭代次数，便于观察权重变化（仅调试时使用）-----------------------------------
-        if self.training and hasattr(self, '_iter_count'):
-            self._iter_count += 1
-        else:
-            self._iter_count = 0
+        # if self.training and hasattr(self, '_iter_count'):
+        #     self._iter_count += 1
+        # else:
+        #     self._iter_count = 0
         
-        if self._iter_count % 100 == 0:
-            alpha0 = torch.sigmoid(self.alpha_0).item()
-            alpha1 = torch.sigmoid(self.alpha_1).item()
-            print(f"[Fusion] alpha_0={alpha0:.4f}, alpha_1={alpha1:.4f}")
+        # if self._iter_count % 100 == 0:
+        #     alpha0 = torch.sigmoid(self.alpha_0).item()
+        #     alpha1 = torch.sigmoid(self.alpha_1).item()
+        #     print(f"[Fusion] alpha_0={alpha0:.4f}, alpha_1={alpha1:.4f}")
 # -----------------------------------------------------------------------------------------------------------------------
         fused = {}
         

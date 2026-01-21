@@ -16,13 +16,13 @@ from torchvision.ops import box_convert
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(description='Grounding DINO 推理脚本')
-    parser.add_argument('--input-folder', type=str, default="dataset/NUDT-SIRST/images",
+    parser.add_argument('--input-folder', type=str, default="dataset/SIRST/images",
                         help='输入文件夹路径')
-    parser.add_argument('--output-folder', type=str, default="test_output/Swin_T/results_0119exp1/NUDT-SIRST",
+    parser.add_argument('--output-folder', type=str, default="test_output/Swin_T/results_0121exp1/SIRST",
                         help='输出文件夹路径')
     parser.add_argument('--config', type=str, default="config/cfg_odvg.py",
                         help='模型配置文件路径')
-    parser.add_argument('--weights', type=str, default="training_output_lora/lora_0119_exp1/merged_model.pth",
+    parser.add_argument('--weights', type=str, default="/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_1230exp1/merged_model.pth",
                         help='模型权重文件路径')
     parser.add_argument('--text-prompt', type=str, default="Infrared small target",
                         help='文本提示')
