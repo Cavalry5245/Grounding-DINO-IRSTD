@@ -130,7 +130,7 @@ def masks_to_boxes(masks):
 
     return torch.stack([x_min, y_min, x_max, y_max], 1)
 
-def box_nwd_loss(pred, target, eps=1e-7, constant=12.8):
+def box_nwd_loss(pred, target, eps=1e-7, constant=17):
     """`Implementation of paper `Enhancing Geometric Factors into
     Model Learning and Inference for Object Detection and Instance
     Segmentation <https://arxiv.org/abs/2005.03572>`_.

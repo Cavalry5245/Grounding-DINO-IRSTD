@@ -123,6 +123,28 @@ def get_args_parser():
     # Save options
     parser.add_argument('--save_best_only', action='store_true', default=True,
                         help='Only save the best model checkpoint')
+    
+    # ==================== 扩展评估参数 ====================
+    # 保存JSON结果
+    parser.add_argument('--save_json', action='store_true',
+                        help='Save predictions in COCO JSON format')
+    
+    # 绘制曲线
+    parser.add_argument('--plot_curves', action='store_true',
+                        help='Plot PR/P/R/F1 curves')
+    
+    # 可视化预测
+    parser.add_argument('--visualize', action='store_true',
+                        help='Visualize predictions vs ground truth')
+    
+    # 保存详细指标
+    parser.add_argument('--save_metrics', action='store_true',
+                        help='Save detailed metrics to file')
+    
+    # 一键启用所有扩展功能
+    parser.add_argument('--extended_eval', action='store_true',
+                        help='Enable all extended evaluation features (save_json, plot_curves, visualize, save_metrics)')
+    # ============================================================
 
     return parser
 
@@ -491,10 +513,10 @@ def main(args):
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info('number of params:'+str(n_parameters))
-    logger.info("trainable params:\n" + json.dumps(
-        {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, 
-        indent=2
-    ))
+    # logger.info("trainable params:\n" + json.dumps(
+    #     {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, 
+    #     indent=2
+    # ))
 
     # Optimizer setup
     if args.use_lora:
@@ -513,10 +535,10 @@ def main(args):
                         parameter.requires_grad_(False)
                         break
     
-    logger.info("params after freezing:\n" + json.dumps(
-        {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, 
-        indent=2
-    ))
+    # logger.info("params after freezing:\n" + json.dumps(
+    #     {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, 
+    #     indent=2
+    # ))
 
     optimizer = torch.optim.AdamW(param_dicts, lr=args.lr,
                                   weight_decay=args.weight_decay)
