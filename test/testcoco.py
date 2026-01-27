@@ -16,9 +16,9 @@ from torchvision.ops import box_convert
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(description='Grounding DINO 推理脚本')
-    parser.add_argument('--input-folder', type=str, default="data/NUDT-SIRST/images/test",
+    parser.add_argument('--input-folder', type=str, default="data/IRSTD-1k/images/test",
                         help='输入文件夹路径')
-    parser.add_argument('--output-folder', type=str, default="test_output/Swin_T/results_0121exp1/NUDT-SIRST",
+    parser.add_argument('--output-folder', type=str, default="test_output/Swin_T/results_0121exp1/IRSTD-1k",
                         help='输出文件夹路径')
     parser.add_argument('--config', type=str, default="config/cfg_odvg.py",
                         help='模型配置文件路径')

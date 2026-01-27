@@ -124,28 +124,6 @@ def get_args_parser():
     parser.add_argument('--save_best_only', action='store_true', default=True,
                         help='Only save the best model checkpoint')
     
-    # ==================== 扩展评估参数 ====================
-    # 保存JSON结果
-    parser.add_argument('--save_json', action='store_true',
-                        help='Save predictions in COCO JSON format')
-    
-    # 绘制曲线
-    parser.add_argument('--plot_curves', action='store_true',
-                        help='Plot PR/P/R/F1 curves')
-    
-    # 可视化预测
-    parser.add_argument('--visualize', action='store_true',
-                        help='Visualize predictions vs ground truth')
-    
-    # 保存详细指标
-    parser.add_argument('--save_metrics', action='store_true',
-                        help='Save detailed metrics to file')
-    
-    # 一键启用所有扩展功能
-    parser.add_argument('--extended_eval', action='store_true',
-                        help='Enable all extended evaluation features (save_json, plot_curves, visualize, save_metrics)')
-    # ============================================================
-
     return parser
 
 
@@ -399,6 +377,8 @@ def load_lora_model(base_model, lora_path, logger=None):
     
     return model
 
+
+
 def main(args):
     
 
@@ -462,7 +442,7 @@ def main(args):
     wo_class_error = False
     model.to(device)
     logger.debug("build model, done.")
-
+# ---------------------------------------------------------------------------
     # Load pretrained weights BEFORE applying LoRA
     if args.pretrain_model_path and not args.resume:
         logger.info(f"Loading pretrained model from {args.pretrain_model_path}")
@@ -491,7 +471,80 @@ def main(args):
         
         _load_output = model.load_state_dict(_tmp_st, strict=False)
         # logger.info(str(_load_output))
+# ---------------------------------------------------------------------------
+    # # Load pretrained weights BEFORE applying LoRA
+    # if args.pretrain_model_path and not args.resume:
+    #     logger.info(f"Loading pretrained model from {args.pretrain_model_path}")
+    #     checkpoint = torch.load(args.pretrain_model_path, map_location='cpu')
+    #     if 'model' in checkpoint:
+    #         checkpoint = checkpoint['model']
+        
+    #     from collections import OrderedDict
+    #     _ignorekeywordlist = args.finetune_ignore if args.finetune_ignore else []
+    #     ignorelist = []
+ 
+    #     def check_keep(keyname, ignorekeywordlist):
+    #         for keyword in ignorekeywordlist:
+    #             if keyword in keyname:
+    #                 ignorelist.append(keyname)
+    #                 return False
+    #         return True
+ 
+    #     # 先按关键词过滤
+    #     _tmp_st = OrderedDict({
+    #         k: v for k, v in utils.clean_state_dict(checkpoint).items()
+    #         if check_keep(k, _ignorekeywordlist)
+    #     })
+        
+    #     if ignorelist:
+    #         logger.info("Ignore keys: {}".format(json.dumps(ignorelist, indent=2)))
+        
+    #     # 形状过滤函数
+    #     def filter_state_dict_by_shape(state_dict, model, logger=None):
+    #         model_state_dict = model.state_dict()
+    #         filtered_state_dict = {}
+    #         missing_keys = []
+    #         unexpected_keys = []
+    #         shape_mismatch_keys = []
+            
+    #         for k, v in state_dict.items():
+    #             if k in model_state_dict:
+    #                 if v.shape == model_state_dict[k].shape:
+    #                     filtered_state_dict[k] = v
+    #                 else:
+    #                     shape_mismatch_keys.append(k)
+    #                     if logger:
+    #                         logger.info(f"Shape mismatch for {k}: checkpoint {v.shape} != model {model_state_dict[k].shape}")
+    #             else:
+    #                 unexpected_keys.append(k)
+            
+    #         for k in model_state_dict:
+    #             if k not in state_dict:
+    #                 missing_keys.append(k)
+            
+    #         if logger:
+    #             if shape_mismatch_keys:
+    #                 logger.info(f"Skipped {len(shape_mismatch_keys)} shape-mismatch keys")
+    #             if missing_keys:
+    #                 logger.info(f"Missing keys in checkpoint: {len(missing_keys)} (will be randomly initialized)")
+    #             if unexpected_keys:
+    #                 logger.info(f"Unexpected keys in checkpoint: {len(unexpected_keys)}")
+    #             logger.info(f"Loaded {len(filtered_state_dict)} / {len(state_dict)} parameters from checkpoint")
+            
+    #         return filtered_state_dict, missing_keys, unexpected_keys
+        
+    #     # 再按形状过滤
+    #     _filtered_st, missing_keys, unexpected_keys = filter_state_dict_by_shape(_tmp_st, model, logger)
+        
+    #     # 加载过滤后的权重
+    #     _load_output = model.load_state_dict(_filtered_st, strict=False)
+        
+    #     # 打印加载结果
+    #     logger.info(f"Missing keys (will be randomly initialized): {len(missing_keys)}")
+    #     logger.info(f"Unexpected keys (not used): {len(unexpected_keys)}")
+    #     logger.info(f"Successfully loaded keys: {len(_filtered_st)}")
 
+#------------------------------------------------------------------------------
     # Apply LoRA if enabled
     if args.use_lora:
         if args.lora_resume:

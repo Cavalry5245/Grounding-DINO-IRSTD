@@ -84,4 +84,4 @@ fi
 echo "Executing: $CMD"
 eval $CMD
 
-# CUDA_VISIBLE_DEVICES=2,3 bash train_dist.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/0121_exp1
+# CUDA_VISIBLE_DEVICES=2,3 bash train_dist.sh 4 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/0125_exp1

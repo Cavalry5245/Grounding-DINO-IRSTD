@@ -14,17 +14,17 @@ PORT=${PORT:-29501}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 
 # Model paths
-PRETRAIN_MODEL_PATH=${PRETRAIN_MODEL_PATH:-"/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_0121_exp2/merged_model.pth"}
+PRETRAIN_MODEL_PATH=${PRETRAIN_MODEL_PATH:-"/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_1230_exp1/merged_model.pth"}
 TEXT_ENCODER_TYPE=${TEXT_ENCODER_TYPE:-"/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased"}
 
 # LoRA parameters (using peft)
-USE_LORA=${USE_LORA:-"false"}
+USE_LORA=${USE_LORA:-"true"}
 LORA_RESUME=${LORA_RESUME:-""}
 MERGE_LORA=${MERGE_LORA:-"false"}
 
 # ==================== 新增：扩展评估参数 ====================
 # 一键启用所有扩展功能
-EXTENDED_EVAL=${EXTENDED_EVAL:-"false"}
+EXTENDED_EVAL=${EXTENDED_EVAL:-"true"}
 
 # 或者单独控制每个功能
 SAVE_JSON=${SAVE_JSON:-"false"}       # 保存COCO格式JSON结果
@@ -118,4 +118,4 @@ echo ""
 
 eval $CMD
 
-# bash test_dist.sh 2 ./config/cfg_odvg.py ./config/datasets_coco_test.json ./eval_output/1230_exp1/nudt
+# bash test_dist.sh 2 ./config/cfg_odvg.py ./config/datasets_coco_test.json ./eval_output/1230_exp1/sirst

@@ -9,21 +9,21 @@ import matplotlib.colors as mcolors
 
 # ================= 配置区域 =================
 # 1. 数据路径
-GT_FOLDER = 'dataset/SIRST/masks'       # Mask 文件夹路径
+GT_FOLDER = 'dataset/IRSTD-1k/IRSTD1k_Label'       # Mask 文件夹路径
 
 # 2. 不同方法的预测结果 (方法名称: JSON文件路径)
 METHODS = {
-    'original': 'test_output/Swin_T/results_0121exp1/SIRST/instances_results.json',
+    'IRSTD-1k': 'test_output/Swin_T/results_1230exp1/IRSTD-1k/instances_results.json',
 }
 
 # 3. 输出路径
-OUTPUT_PLOT_PATH = 'figs/pr_curve/0121exp1/pr_curve_SIRST_0121exp1.png'
+OUTPUT_PLOT_PATH = 'figs/pr_curve/1230exp1/pr_curve_IRSTD-1k_1230exp1.png'
 # 4. 评估标准
 CENTER_HIT = True   # True: 使用中心点命中 (推荐用于红外小目标)
 IOU_THRESH = 0.1    # 如果 CENTER_HIT=False, 则使用此 IoU 阈值
 
 # 5. 图表标题
-CHART_TITLE = 'Precision-Recall Curve (SIRST)'
+CHART_TITLE = 'Precision-Recall Curve (IRSTD-1k)'
 # ===========================================
 
 
