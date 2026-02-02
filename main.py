@@ -25,6 +25,7 @@ from groundingdino.util.utils import clean_state_dict
 
 from peft import LoraConfig, get_peft_model, PeftModel, TaskType
 from peft.tuners.lora import LoraLayer
+from tqdm import tqdm
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
@@ -731,7 +732,13 @@ def main(args):
     start_time = time.time()
     best_map_holder = BestMetricHolder(use_ema=False)
 
-    for epoch in range(args.start_epoch, args.epochs):
+    # 使用tqdm包装训练主循环以显示总体进度
+    epoch_progress_bar = tqdm(range(args.start_epoch, args.epochs), 
+                              desc="Training Progress", 
+                              total=args.epochs - args.start_epoch,
+                              position=0)
+    # for epoch in range(args.start_epoch, args.epochs):
+    for epoch in epoch_progress_bar:
         epoch_start_time = time.time()
         if args.distributed:
             sampler_train.set_epoch(epoch)

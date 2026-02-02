@@ -215,12 +215,14 @@ class YoloStyleEvaluator:
     - P/R: 取 F1 最大处（由 metrics.py::ap_per_class 内部决定）
     - mAP@0.5 / mAP@0.5:0.95
     """
-    def __init__(self, v5_metric: bool, output_dir: str, save_pred_json: bool, coco_pred_category_id: int):
+    def __init__(self, v5_metric: bool, output_dir: str, save_pred_json: bool, coco_pred_category_id: int,
+             save_pr_curve_data: bool = True):
         self.v5_metric = v5_metric
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.save_pred_json = save_pred_json
+        self.save_pr_curve_data = save_pr_curve_data
         self.coco_pred_category_id = coco_pred_category_id
 
         self.iouv = torch.linspace(0.5, 0.95, 10)
@@ -289,9 +291,14 @@ class YoloStyleEvaluator:
         target_cls_cat = np.concatenate([s[3] for s in self.stats], axis=0) if len(self.stats) else np.array([])
 
         if correct_cat.shape[0] and correct_cat.any():
-            p, r, ap, f1, ap_class = ap_per_class(
+            p, r, ap, f1, ap_class, best_thres = ap_per_class(
                 correct_cat, conf_cat, pred_cls_cat, target_cls_cat,
-                v5_metric=self.v5_metric, plot=False, save_dir=str(self.output_dir), names=()
+                v5_metric=self.v5_metric,
+                plot=False,
+                save_dir=str(self.output_dir),
+                names=(),
+                return_best_thres=True,
+                save_pr_curve_data=self.save_pr_curve_data
             )
             ap50 = ap[:, 0]
             ap_mean = ap.mean(1)
@@ -300,11 +307,30 @@ class YoloStyleEvaluator:
         else:
             mp = mr = map50 = map5095 = 0.0
 
+        f1_mean = float(np.mean(f1))
+        # count-based PD/FA at IoU=0.5 and confidence >= best_thres
+        selected = conf_cat >= best_thres
+        num_selected = int(selected.sum())
+
+        n_images_eval = len(self.stats)  # 实际参与评估的图像数（不含 missing） 
+        tp05 = correct_cat[:, 0].astype(np.bool_)  # IoU=0.5 correctness
+        TP = int(tp05[selected].sum())
+        FP = int(num_selected - TP)
+
+        GT = int(target_cls_cat.shape[0])
+        FN = int(max(GT - TP, 0))
+
+        PD = TP / (TP + FN) if (TP + FN) > 0 else 0.0  # == TP/GT when GT>0
+        # FA = FP / (TP + FP) if (TP + FP) > 0 else 0.0  # your definition
+        FA = FP / n_images_eval if n_images_eval > 0 else 0.0
+
         if self.save_pred_json:
             pred_path = self.output_dir / "predictions_coco_list.json"
             pred_path.write_text(json.dumps(self.pred_json, indent=2), encoding="utf-8")
 
-        return {"P": mp, "R": mr, "mAP@0.5": map50, "mAP@0.5:0.95": map5095}
+        return {"P": mp, "R": mr, "F1": f1_mean, "mAP@0.5": map50, "mAP@0.5:0.95": map5095, 
+                "PD": float(PD), "FA": float(FA), "best_thres": float(best_thres), "TP": TP, "FP_box": FP, "FN": FN, "GT": GT,
+                "n_images_eval": int(n_images_eval),}
 
 
 # -------------------------
@@ -344,6 +370,7 @@ def evaluate_gdino_on_coco(cfg: Dict[str, Any]) -> Dict[str, float]:
         output_dir=str(cfg["output_dir"]),
         save_pred_json=bool(cfg.get("save_pred_json", False)),
         coco_pred_category_id=int(coco_pred_cat_id),
+        save_pr_curve_data=bool(cfg.get("save_pr_curve_data", True)),
     )
 
     missing = 0

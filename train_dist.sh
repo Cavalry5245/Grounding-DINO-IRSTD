@@ -10,7 +10,7 @@ OUTPUT_DIR=$4
 # Distributed training parameters
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
-PORT=${PORT:-29501}
+PORT=${PORT:-29505}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 
 # Model paths
@@ -84,4 +84,4 @@ fi
 echo "Executing: $CMD"
 eval $CMD
 
-# CUDA_VISIBLE_DEVICES=2,3 bash train_dist.sh 4 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/0125_exp1
+# CUDA_VISIBLE_DEVICES=2,3 bash train_dist.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/0125_exp1

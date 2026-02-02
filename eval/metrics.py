@@ -15,7 +15,8 @@ def fitness(x):
     return (x[:, :4] * w).sum(1)
 
 
-def ap_per_class(tp, conf, pred_cls, target_cls, v5_metric=False, plot=False, save_dir='.', names=()):
+def ap_per_class(tp, conf, pred_cls, target_cls, v5_metric=False, plot=False, save_dir='.', names=(),
+                 return_best_thres=False, save_pr_curve_data=False):
     """ Compute the average precision, given the recall and precision curves.
     Source: https://github.com/rafaelpadilla/Object-Detection-Metrics.
     # Arguments
@@ -63,7 +64,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, v5_metric=False, plot=False, sa
             # AP from recall-precision curve
             for j in range(tp.shape[1]):
                 ap[ci, j], mpre, mrec = compute_ap(recall[:, j], precision[:, j], v5_metric=v5_metric)
-                if plot and j == 0:
+                if (plot or save_pr_curve_data) and j == 0:
                     py.append(np.interp(px, mrec, mpre))  # precision at mAP@0.5
 
     # Compute F1 (harmonic mean of precision and recall)
@@ -77,8 +78,22 @@ def ap_per_class(tp, conf, pred_cls, target_cls, v5_metric=False, plot=False, sa
     # np.savetxt('runs/f1.csv', f1, delimiter=',')    #2023.2.8
     # np.savetxt('runs/re.csv', r, delimiter=',')  # 2023.2.8
     # np.savetxt('runs/pre.csv', p, delimiter=',')  # 2023.2.8
-    i = f1.mean(0).argmax()  # max F1 index
-    return p[:, i], r[:, i], ap, f1[:, i], unique_classes.astype('int32')
+    i = f1.mean(0).argmax()  # best F1 index over confidence grid px
+    best_thres = float(px[i])
+
+    # save PR curve data for later comparison
+    if save_pr_curve_data and len(py):
+        py_stack = np.stack(py, axis=1)  # [len(px), n_curves/classes_present]
+        np.savez(Path(save_dir) / "pr_curve_data.npz",
+                px=px,                 # recall grid for PR curve plotting (0..1)
+                py=py_stack,           # precision curves (per-class if available)
+                py_mean=py_stack.mean(1),
+                best_thres=best_thres)
+
+    if return_best_thres:
+        return p[:, i], r[:, i], ap, f1[:, i], unique_classes.astype('int32'), best_thres
+    else:
+        return p[:, i], r[:, i], ap, f1[:, i], unique_classes.astype('int32')
 
 
 def compute_ap(recall, precision, v5_metric=False):

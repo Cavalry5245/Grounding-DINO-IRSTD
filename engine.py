@@ -7,6 +7,7 @@ import math
 import os
 import sys
 from typing import Iterable
+from tqdm import tqdm
 
 from util.utils import to_device
 import torch
@@ -37,7 +38,14 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
     print(f"Starting epoch {epoch}, data_loader has {len(data_loader)} batches")
 
-    for samples, targets in metric_logger.log_every(data_loader, print_freq, header, logger=logger):
+    # for samples, targets in metric_logger.log_every(data_loader, print_freq, header, logger=logger):
+        # 使用tqdm包装数据加载器以显示进度条
+    progress_bar = tqdm(enumerate(data_loader), 
+                        total=len(data_loader), 
+                        desc=f"Epoch {epoch}",
+                        leave=False)
+
+    for idx, (samples, targets) in progress_bar:
         print(f"Processing batch {_cnt}")
         
         samples = samples.to(device)
@@ -188,7 +196,14 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
     caption = " . ".join(cat_list) + ' .'
     print("Input text prompt:", caption)
 
-    for samples, targets in metric_logger.log_every(data_loader, 10, header, logger=logger):
+    # for samples, targets in metric_logger.log_every(data_loader, 10, header, logger=logger):
+        # 使用tqdm包装评估数据加载器
+    progress_bar = tqdm(enumerate(data_loader), 
+                        total=len(data_loader), 
+                        desc="Evaluating",
+                        leave=False)
+
+    for idx, (samples, targets) in progress_bar:
         samples = samples.to(device)
 
         targets = [{k: to_device(v, device) for k, v in t.items()} for t in targets]

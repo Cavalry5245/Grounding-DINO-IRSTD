@@ -3,7 +3,7 @@ data_aug_max_size = 1333
 data_aug_scales2_resize = [400, 500, 600]
 data_aug_scales2_crop = [384, 600]
 data_aug_scale_overlap = None
-batch_size = 4
+batch_size = 8
 modelname = 'groundingdino'
 backbone = 'swin_T_224_1k'  # "swin_B_384_22k"/"swin_T_224_1k"
 position_embedding = 'sine'
@@ -121,6 +121,6 @@ use_coco_eval = False
 dn_scalar = 100
 label_list=['infrared small target']
 
-use_hr_branch = False        # 启用高分辨率分支
-hr_fusion_type = "concat"      # 融合方式: "add" 或 "concat"
+use_hr_branch = True        # 启用高分辨率分支
+hr_fusion_type = "cat"      # 融合方式: "add" 或 "concat"
 freeze_swin = False         # 是否冻结Swin权重
