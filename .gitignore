@@ -199,3 +199,5 @@ __pycache__/
 *.pyc
 *.so
 *.o
+
+*.png
