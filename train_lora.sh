@@ -10,8 +10,8 @@ DATASETS=${3:-"/media/sisu/X/hc/projects/Open-GroundingDino/config/datasets_mixe
 OUTPUT_DIR=${4:-"/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_exp1"}
 
 # LoRA defaults
-export LORA_R=${LORA_R:-8}
-export LORA_ALPHA=${LORA_ALPHA:-16}
+export LORA_R=${LORA_R:-16}
+export LORA_ALPHA=${LORA_ALPHA:-32}
 export LORA_DROPOUT=${LORA_DROPOUT:-0.05}
 export LORA_BIAS=${LORA_BIAS:-"none"}
 export MERGE_LORA=${MERGE_LORA:-"true"}
@@ -27,4 +27,4 @@ echo "=============================================="
 
 bash train_dist.sh "$GPU_NUM" "$CFG" "$DATASETS" "$OUTPUT_DIR"
 
-# CUDA_VISIBLE_DEVICES=2,3 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_nolabel/0129_exp1_K
+# CUDA_VISIBLE_DEVICES=2 bash train_lora.sh 1 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0206_exp2_D

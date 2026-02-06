@@ -23,53 +23,9 @@ from engine import evaluate, train_one_epoch
 
 from groundingdino.util.utils import clean_state_dict
 
-import random
-from torch.utils.data import Dataset
-
-# ==========================================
-# Prompt 增强包装类
-# ==========================================
-class PromptAugmentationDataset(Dataset):
-    def __init__(self, dataset):
-        self.dataset = dataset
-        # 针对红外小目标的同义词池
-        # 注意：Grounding DINO 强烈建议句子以 . 结尾
-        self.prompt_pool = [
-            "infrared small target .",       # 标准
-            "small thermal object .",        # 强调热成像
-            "dim target in infrared image .",# 强调暗弱
-            "bright spot .",                 # 强调视觉特征
-            "anomaly point .",               # 强调异常点
-            "small object .",                # 泛化
-            "infrared drone or bird .",      # 强调潜在类别
-            "thermal signature ."            # 强调热特征
-        ]
-        
-    def __len__(self):
-        return len(self.dataset)
-
-    def __getitem__(self, idx):
-        # 1. 获取原始数据
-        img, target = self.dataset[idx]
-        
-        # 2. 50% 概率使用增强，50% 概率保持原样 (保留一定的稳定性)
-        # 你可以根据需要调整这个概率，比如改为 0.8 或 1.0
-        if random.random() < 0.8: 
-            new_caption = random.choice(self.prompt_pool)
-            target["caption"] = new_caption
-            
-            new_class_name = new_caption.replace(" .", "").strip()
-            target["cap_list"] = [new_class_name]
-            if "label_names" in target:
-                 target["label_names"] = [new_class_name]
-        else:
-            if "cap_list" not in target:
-                raw_cap = target["caption"]
-                # 假设原始 caption 也是以 . 结尾的标准格式
-                raw_class = raw_cap.replace(" .", "").strip()
-                target["cap_list"] = [raw_class]
-
-        return img, target
+from peft import LoraConfig, get_peft_model, PeftModel, TaskType
+from peft.tuners.lora import LoraLayer
+from tqdm import tqdm
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
@@ -116,8 +72,100 @@ def get_args_parser():
     parser.add_argument("--local-rank", type=int, help='local rank for DistributedDataParallel')
     parser.add_argument('--amp', action='store_true',
                         help="Train with mixed precision")
-    parser.add_argument('--use_prompt_aug', action='store_true', 
-                        help="是否开启随机文本提示增强 (Random Prompt Augmentation)")
+
+    # LoRA parameters
+    parser.add_argument('--use_lora', action='store_true',
+                        help='Enable LoRA fine-tuning')
+    parser.add_argument('--lora_r', default=8, type=int,
+                        help='LoRA rank')
+    parser.add_argument('--lora_alpha', default=16, type=int,
+                        help='LoRA alpha scaling factor')
+    parser.add_argument('--lora_dropout', default=0.05, type=float,
+                        help='LoRA dropout rate')
+    parser.add_argument('--lora_target_modules', type=str, nargs='+',
+                        default=[
+                        # # Encoder自注意力层
+                        # "sampling_offsets",
+                        # "attention_weights",
+                        # "value_proj",
+                        # "output_proj",
+                        # # 融合层
+                        # "v_proj",
+                        # "l_proj",
+                        # "values_v_proj",
+                        # "values_l_proj",
+                        # "out_v_proj",
+                        # "out_l_proj",
+                        # # FFN
+                        # "linear1",
+                        # "linear2",
+                        # # Text encoder
+                        # "query",
+                        # "key",
+                        # "value",
+                        # "dense",
+                        # -----------------------------------------------
+                        # 1. Image Backbone (Swin Transformer)
+                        # -----------------------------------------------
+                        # 红外特征与RGB差异最大，必须微调这里
+                        "patch_embed.proj",  # 第一层卷积，适应红外输入分布
+                        "attn.qkv",          # Swin的注意力核心
+                        "attn.proj",
+                        "mlp.fc1",           # Swin的FFN
+                        "mlp.fc2",
+                        
+                        # -----------------------------------------------
+                        # 2. Transformer Encoder & Decoder (Deformable DETR)
+                        # -----------------------------------------------
+                        # 调整采样位置，让模型学会盯着小目标看
+                        "sampling_offsets",  # 预测采样点偏移量 (关键)
+                        "attention_weights", # 预测采样点权重
+                        "value_proj",        # 调整特征值映射
+                        "output_proj",
+                        
+                        # -----------------------------------------------
+                        # 3. Fusion Layers (Bi-Directional Attention)
+                        # -----------------------------------------------
+                        # 让"白点"视觉特征和"Target"文本特征重新对齐
+                        "v_proj", 
+                        "l_proj", 
+                        "values_v_proj", 
+                        "values_l_proj", 
+                        "out_v_proj", 
+                        "out_l_proj",
+                        
+                        # -----------------------------------------------
+                        # 4. FFN (Feed Forward Networks in Transformer)
+                        # -----------------------------------------------
+                        "linear1", 
+                        "linear2",
+                        
+                        # -----------------------------------------------
+                        # ❌ 移除 Text Encoder 相关层
+                        # -----------------------------------------------
+                        # 不要包含: "query", "key", "value", "dense" (针对BERT的)
+                        # 除非显存极其富裕且想做极端微调，否则不建议加
+                    ],
+                        help='Target modules to apply LoRA (default: auto-detect linear layers)')
+    parser.add_argument('--lora_bias', type=str, default='none',
+                        choices=['none', 'all', 'lora_only'],
+                        help='Bias training strategy')
+    parser.add_argument('--lora_resume', default='',
+                        help='Resume LoRA weights from peft checkpoint directory')
+    parser.add_argument('--merge_lora_after_train', action='store_true',
+                        help='Merge LoRA weights into base model after training')
+    parser.add_argument('--lora_unfreeze_layers', type=str, nargs='+',
+                        default=[
+                            'class_embed',
+                            'bbox_embed',
+                            'label_enc',
+                        ],
+                        help='Layers to unfreeze (keep fully trainable)')
+
+    # Save options
+    parser.add_argument('--save_best_only', action='store_true', default=True,
+                        help='Only save the best model checkpoint')
+    
     return parser
 
 
@@ -129,6 +177,199 @@ def build_model_main(args):
     build_func = MODULE_BUILD_FUNCS.get(args.modelname)
     model, criterion, postprocessors = build_func(args)
     return model, criterion, postprocessors
+
+
+def print_trainable_parameters(model, logger=None):
+    """Print trainable parameters info."""
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    
+    message = (
+        f"trainable params: {trainable_params:,} || "
+        f"all params: {all_param:,} || "
+        f"trainable%: {100 * trainable_params / all_param:.4f}%"
+    )
+    if logger:
+        logger.info(message)
+    else:
+        print(message)
+
+def apply_lora(model, args, logger=None):
+     # 确定目标模块
+    if args.lora_target_modules is None:
+        target_modules = [
+            "sampling_offsets",
+            "attention_weights", 
+            "value_proj",
+            "output_proj",
+        ]
+    else:
+        target_modules = args.lora_target_modules
+    
+    # 确定需要解冻的层
+    if hasattr(args, 'lora_unfreeze_layers') and args.lora_unfreeze_layers:
+        layers_to_unfreeze = args.lora_unfreeze_layers
+    else:
+        # 默认解冻检测头
+        layers_to_unfreeze = [
+            'class_embed',
+            'bbox_embed',
+            'label_enc',
+        ]
+    
+    if logger:
+        logger.info(f"LoRA target modules: {target_modules}")
+        logger.info(f"Layers to unfreeze: {layers_to_unfreeze}")
+    
+    # 验证目标模块存在
+    available_linear = set()
+    for name, module in model.named_modules():
+        if isinstance(module, torch.nn.Linear):
+            available_linear.add(name.split('.')[-1])
+    
+    valid_targets = [t for t in target_modules if t in available_linear]
+    if not valid_targets:
+        if logger:
+            logger.error(f"No valid target modules found!")
+            logger.info(f"Available linear modules: {sorted(available_linear)}")
+        raise ValueError(f"No valid target modules. Available: {available_linear}")
+    
+    if logger and set(valid_targets) != set(target_modules):
+        missing = set(target_modules) - set(valid_targets)
+        logger.warning(f"Some target modules not found and will be skipped: {missing}")
+    
+    # 创建 LoRA 配置
+    lora_config = LoraConfig(
+        r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
+        bias=args.lora_bias,
+        target_modules=valid_targets,
+        init_lora_weights=True,
+    )
+    
+    if logger:
+        logger.info("=" * 50)
+        logger.info("LoRA Configuration:")
+        logger.info(f"  - rank (r): {args.lora_r}")
+        logger.info(f"  - alpha: {args.lora_alpha}")
+        logger.info(f"  - scaling: {args.lora_alpha / args.lora_r}")
+        logger.info(f"  - dropout: {args.lora_dropout}")
+        logger.info(f"  - bias: {args.lora_bias}")
+        logger.info(f"  - target_modules: {valid_targets}")
+        logger.info("=" * 50)
+    
+    # 应用 LoRA
+    model = get_peft_model(model, lora_config)
+    
+    # ========== 手动解冻指定层 ==========
+    unfrozen_params = []
+    unfrozen_count = 0
+    
+    for name, param in model.named_parameters():
+        # 跳过已经可训练的参数（LoRA 参数）
+        if param.requires_grad:
+            continue
+            
+        # 检查是否需要解冻
+        should_unfreeze = False
+        for layer_name in layers_to_unfreeze:
+            if layer_name in name:
+                should_unfreeze = True
+                break
+        
+        if should_unfreeze:
+            param.requires_grad = True
+            unfrozen_params.append(name)
+            unfrozen_count += param.numel()
+    
+    if logger:
+        logger.info(f"Manually unfroze {len(unfrozen_params)} parameter tensors ({unfrozen_count:,} parameters):")
+        for name in unfrozen_params[:30]:
+            logger.info(f"  ✓ {name}")
+        if len(unfrozen_params) > 30:
+            logger.info(f"  ... and {len(unfrozen_params) - 30} more")
+    
+    # ========== 打印最终统计 ==========
+    if logger:
+        total_params = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        
+        # 分类统计
+        lora_params = 0
+        head_params = 0
+        other_params = 0
+        
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                numel = param.numel()
+                if 'lora_' in name:
+                    lora_params += numel
+                elif any(h in name for h in ['class_embed', 'bbox_embed', 'label_enc']):
+                    head_params += numel
+                else:
+                    other_params += numel
+        
+        logger.info("=" * 50)
+        logger.info("Trainable Parameter Summary:")
+        logger.info(f"  Total params:      {total_params:>12,}")
+        logger.info(f"  Trainable params:  {trainable_params:>12,} ({100*trainable_params/total_params:.2f}%)")
+        logger.info(f"    - LoRA:          {lora_params:>12,}")
+        logger.info(f"    - Det. heads:    {head_params:>12,}")
+        logger.info(f"    - Other:         {other_params:>12,}")
+        logger.info("=" * 50)
+    
+    return model
+
+def save_lora_model(model, output_dir, epoch=None, optimizer=None, lr_scheduler=None, args=None, 
+                    map_score=None, ap50_score=None):
+    """Save LoRA model using peft's save method."""
+    save_dir = Path(output_dir)
+    
+    if epoch is not None:
+        # 保存带 epoch 的检查点
+        checkpoint_dir = save_dir / f"lora_checkpoint_epoch{epoch:04d}"
+    else:
+        checkpoint_dir = save_dir / "lora_checkpoint"
+    
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 保存 LoRA 权重 (peft 格式)
+    model.save_pretrained(checkpoint_dir)
+    
+    # 额外保存训练状态
+    training_state = {
+        'epoch': epoch,
+    }
+    if optimizer is not None:
+        training_state['optimizer'] = optimizer.state_dict()
+    if lr_scheduler is not None:
+        training_state['lr_scheduler'] = lr_scheduler.state_dict()
+    if args is not None:
+        training_state['args'] = vars(args)
+    if map_score is not None:
+        training_state['mAP'] = map_score
+    if ap50_score is not None:
+        training_state['AP50'] = ap50_score
+    
+    torch.save(training_state, checkpoint_dir / "training_state.pth")
+    
+    return checkpoint_dir
+
+
+def load_lora_model(base_model, lora_path, logger=None):
+    """Load LoRA weights from peft checkpoint."""
+    if logger:
+        logger.info(f"Loading LoRA weights from {lora_path}")
+    
+    model = PeftModel.from_pretrained(base_model, lora_path)
+    
+    return model
+
 
 
 def main(args):
@@ -188,111 +429,94 @@ def main(args):
     np.random.seed(seed)
     random.seed(seed)
 
-
+    # Build model
     logger.debug("build model ... ...")
     model, criterion, postprocessors = build_model_main(args)
-
-    # # 查看层命名，正式训练时不需要
-    # for name, module in model.named_modules():
-    #     if isinstance(module, torch.nn.Linear):
-    #         print(name)
-    # exit() # 打印完直接退出
-
-    # ========================================================
-    # LoRA 注入代码模块 
-    # ========================================================
-    # 1. 引入 PEFT
-    from peft import LoraConfig, get_peft_model
-
-    # 2. 定义 LoRA 配置
-    # r: LoRA 的秩，决定参数量。红外小目标任务简单，r=16 或 32 足够。
-    # lora_alpha: 缩放系数，通常设为 r 的 2倍。
-    # target_modules: 这是一个坑点！不同版本的 Grounding DINO 命名不一样。
-    # 我们使用模糊匹配策略，尽量覆盖 Attention 里的 Q 和 V。
-    lora_config = LoraConfig(
-        r=8, 
-        lora_alpha=16, 
-        target_modules=["q_proj", "v_proj"], # 尝试匹配常见的 Attention 层名称
-        lora_dropout=0.1,
-        bias="none",
-        task_type="OBJECT_DETECTION" # 或者是 None，PEFT 对自定义模型比较宽容
-    )
-
-    # 3. 打印一下原来的参数量 (用来写论文对比)
-    print(f"Original Model Parameters: {sum(p.numel() for p in model.parameters())}")
-
-    # 4. 注入 LoRA
-    # 注意：Grounding DINO 官方代码的 model 可能被包裹了 (model.module)，或者是一个复杂的类
-    # 如果报错，可能需要针对 model.backbone 或 model.transformer 分别注入
-    try:
-        model = get_peft_model(model, lora_config)
-        # === 新增：解决梯度警告 ===
-        if hasattr(model, "enable_input_require_grads"):
-            model.enable_input_require_grads()
-        else:
-            # 如果是 DDP 包裹的模型，可能要深入一层
-            # 或者手动定义一个 hook (稍微麻烦点，通常上面那句就够了)
-            pass
-        print("✅ LoRA injected successfully using generic PEFT wrapper!")
-    except Exception as e:
-        print(f"⚠️ Standard PEFT injection failed: {e}")
-        print("Trying manual injection strategies...")
-        # 如果失败，这里可能需要根据你具体代码结构调整
-        pass
-
-    # 5. 打印可训练参数情况 (截图这张表放在论文里！)
-    model.print_trainable_parameters()
-
     wo_class_error = False
     model.to(device)
     logger.debug("build model, done.")
+# ---------------------------------------------------------------------------
+    # Load pretrained weights BEFORE applying LoRA
+    if args.pretrain_model_path and not args.resume:
+        logger.info(f"Loading pretrained model from {args.pretrain_model_path}")
+        checkpoint = torch.load(args.pretrain_model_path, map_location='cpu')
+        if 'model' in checkpoint:
+            checkpoint = checkpoint['model']
+        
+        from collections import OrderedDict
+        _ignorekeywordlist = args.finetune_ignore if args.finetune_ignore else []
+        ignorelist = []
 
+        def check_keep(keyname, ignorekeywordlist):
+            for keyword in ignorekeywordlist:
+                if keyword in keyname:
+                    ignorelist.append(keyname)
+                    return False
+            return True
+
+        _tmp_st = OrderedDict({
+            k: v for k, v in utils.clean_state_dict(checkpoint).items()
+            if check_keep(k, _ignorekeywordlist)
+        })
+        
+        if ignorelist:
+            logger.info("Ignore keys: {}".format(json.dumps(ignorelist, indent=2)))
+        
+        _load_output = model.load_state_dict(_tmp_st, strict=False)
+        # logger.info(str(_load_output))
+
+    # Apply LoRA if enabled
+    if args.use_lora:
+        if args.lora_resume:
+            # 从已有的 LoRA checkpoint 加载
+            logger.info(f"Loading LoRA model from {args.lora_resume}")
+            model = load_lora_model(model, args.lora_resume, logger)
+        else:
+            # 应用新的 LoRA
+            model = apply_lora(model, args, logger)
+        
+        print_trainable_parameters(model, logger)
 
     model_without_ddp = model
     if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=args.find_unused_params)
+        model = torch.nn.parallel.DistributedDataParallel(
+            model, device_ids=[args.gpu],
+            find_unused_parameters=args.find_unused_params)
         model._set_static_graph()
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info('number of params:'+str(n_parameters))
-    logger.info("params before freezing:\n"+json.dumps({n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, indent=2))
+    # logger.info("trainable params:\n" + json.dumps(
+    #     {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, 
+    #     indent=2
+    # ))
 
-    # param_dicts = get_param_dict(args, model_without_ddp)
-    # =========================================================================
-    # LoRA 专用参数分组逻辑
-    # 1. 筛选出所有需要更新的参数 (也就是 requires_grad=True 的 LoRA 参数)
-    rec_params = [p for p in model_without_ddp.parameters() if p.requires_grad]
+    # Optimizer setup
+    if args.use_lora:
+        # 只优化可训练参数 (LoRA 参数)
+        trainable_params = [p for p in model.parameters() if p.requires_grad]
+        param_dicts = [{'params': trainable_params}]
+        logger.info(f"Optimizing {len(trainable_params)} LoRA parameter tensors")
+    else:
+        param_dicts = get_param_dict(args, model_without_ddp)
+        
+        # freeze some layers
+        if args.freeze_keywords is not None:
+            for name, parameter in model.named_parameters():
+                for keyword in args.freeze_keywords:
+                    if keyword in name:
+                        parameter.requires_grad_(False)
+                        break
     
-    # 2. 简单的分组策略：对 LoRA 参数统一应用 args.lr
-    # 如果你想精细一点，区分 weight_decay，可以用下面的写法，但通常简单写法足够了
-    param_dicts = [
-        {
-            "params": rec_params,
-            "lr": args.lr,
-            "weight_decay": args.weight_decay,
-        }
-    ]
-
-    # 3. 安全检查：一定要打印这个数量！
-    # 如果打印出来是 0，说明 LoRA 没注入成功，或者所有参数都被冻结了
-    print(f"************************************************************")
-    print(f"* 🔥 Optimizer Check: Found {len(rec_params)} tensors to optimize.")
-    print(f"*    (Should match the number of LoRA modules)             *")
-    print(f"************************************************************")
-
-    
-    # freeze some layers
-    if args.freeze_keywords is not None:
-        for name, parameter in model.named_parameters():
-            for keyword in args.freeze_keywords:
-                if keyword in name:
-                    parameter.requires_grad_(False)
-                    break
-    logger.info("params after freezing:\n"+json.dumps({n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, indent=2))
+    # logger.info("params after freezing:\n" + json.dumps(
+    #     {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, 
+    #     indent=2
+    # ))
 
     optimizer = torch.optim.AdamW(param_dicts, lr=args.lr,
                                   weight_decay=args.weight_decay)
 
+    # Build dataset
     logger.debug("build dataset ... ...")
     if not args.eval:
         num_of_dataset_train = len(dataset_meta["train"])
@@ -308,19 +532,6 @@ def main(args):
         logger.debug(f'number of training dataset: {num_of_dataset_train}, samples: {len(dataset_train)}')
 
     dataset_val = build_dataset(image_set='val', args=args, datasetinfo=dataset_meta["val"][0])
-
-    if args.use_prompt_aug:
-        print("**********************************************************")
-        print("* 🔥 提示词增强 (Prompt Augmentation) 已开启！             *")
-        print(f"* 包含词库: {len(PromptAugmentationDataset(None).prompt_pool)} 个同义词")
-        print("**********************************************************")
-        
-        # 只对训练集做增强，验证集(Val)永远不要动，保持标准！
-        dataset_train = PromptAugmentationDataset(dataset_train)
-    else:
-        print("**********************************************************")
-        print("* 🛑 提示词增强未开启，使用默认标签。                     *")
-        print("**********************************************************")
 
     if args.distributed:
         sampler_val = DistributedSampler(dataset_val, shuffle=False)
@@ -355,129 +566,255 @@ def main(args):
         model_without_ddp.detr.load_state_dict(clean_state_dict(checkpoint['model']),strict=False)
 
     output_dir = Path(args.output_dir)
-    if os.path.exists(os.path.join(args.output_dir, 'checkpoint.pth')):
+
+    # Resume from checkpoint (非 LoRA 的 resume)
+    if os.path.exists(os.path.join(args.output_dir, 'checkpoint.pth')) and not args.use_lora:
         args.resume = os.path.join(args.output_dir, 'checkpoint.pth')
-    if args.resume:
+    
+    if args.resume and not args.use_lora:
         if args.resume.startswith('https'):
             checkpoint = torch.hub.load_state_dict_from_url(
-                args.resume, map_location='cpu', check_hash=True)
+                args.resume, map_location='cpu', check_hash=True
+            )
         else:
             checkpoint = torch.load(args.resume, map_location='cpu')
-        model_without_ddp.load_state_dict(clean_state_dict(checkpoint['model']),strict=False)
+        model_without_ddp.load_state_dict(
+            clean_state_dict(checkpoint['model']), strict=False
+        )
 
-
-        
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
             args.start_epoch = checkpoint['epoch'] + 1
 
-    if (not args.resume) and args.pretrain_model_path:
-        checkpoint = torch.load(args.pretrain_model_path, map_location='cpu')['model']
-        from collections import OrderedDict
-        _ignorekeywordlist = args.finetune_ignore if args.finetune_ignore else []
-        ignorelist = []
+    # LoRA training state resume
+    if args.use_lora and args.lora_resume:
+        training_state_path = Path(args.lora_resume) / "training_state.pth"
+        if training_state_path.exists():
+            training_state = torch.load(training_state_path, map_location='cpu')
+            if 'optimizer' in training_state and not args.eval:
+                optimizer.load_state_dict(training_state['optimizer'])
+            if 'lr_scheduler' in training_state and not args.eval:
+                lr_scheduler.load_state_dict(training_state['lr_scheduler'])
+            if 'epoch' in training_state:
+                args.start_epoch = training_state['epoch'] + 1
+            logger.info(f"Resumed training state from epoch {args.start_epoch - 1}")
 
-        def check_keep(keyname, ignorekeywordlist):
-            for keyword in ignorekeywordlist:
-                if keyword in keyname:
-                    ignorelist.append(keyname)
-                    return False
-            return True
+    # if (not args.resume) and args.pretrain_model_path:
+    #     checkpoint = torch.load(args.pretrain_model_path, map_location='cpu')['model']
+    #     from collections import OrderedDict
+    #     _ignorekeywordlist = args.finetune_ignore if args.finetune_ignore else []
+    #     ignorelist = []
 
-        logger.info("Ignore keys: {}".format(json.dumps(ignorelist, indent=2)))
-        _tmp_st = OrderedDict({k:v for k, v in utils.clean_state_dict(checkpoint).items() if check_keep(k, _ignorekeywordlist)})
+    #     def check_keep(keyname, ignorekeywordlist):
+    #         for keyword in ignorekeywordlist:
+    #             if keyword in keyname:
+    #                 ignorelist.append(keyname)
+    #                 return False
+    #         return True
 
-        _load_output = model_without_ddp.load_state_dict(_tmp_st, strict=False)
-        logger.info(str(_load_output))
+    #     logger.info("Ignore keys: {}".format(json.dumps(ignorelist, indent=2)))
+    #     _tmp_st = OrderedDict({k:v for k, v in utils.clean_state_dict(checkpoint).items() if check_keep(k, _ignorekeywordlist)})
 
- 
-    
+    #     _load_output = model_without_ddp.load_state_dict(_tmp_st, strict=False)
+    #     # logger.info(str(_load_output))
+
+    # Evaluation mode
     if args.eval:
         os.environ['EVAL_FLAG'] = 'TRUE'
-        test_stats, coco_evaluator = evaluate(model, criterion, postprocessors,
-                                              data_loader_val, base_ds, device, args.output_dir, wo_class_error=wo_class_error, args=args)
+        
+        # 如果需要，合并 LoRA 权重以加速推理
+        if args.use_lora and args.merge_lora_after_train:
+            logger.info("Merging LoRA weights for inference...")
+            model_without_ddp = model_without_ddp.merge_and_unload()
+        
+        test_stats, coco_evaluator = evaluate(
+            model, criterion, postprocessors,
+            data_loader_val, base_ds, device, args.output_dir,
+            wo_class_error=wo_class_error, args=args
+        )
+        
         if args.output_dir:
-            utils.save_on_master(coco_evaluator.coco_eval["bbox"].eval, output_dir / "eval.pth")
+            utils.save_on_master(
+                coco_evaluator.coco_eval["bbox"].eval,
+                output_dir / "eval.pth"
+            )
 
-        log_stats = {**{f'test_{k}': v for k, v in test_stats.items()} }
+        log_stats = {**{f'test_{k}': v for k, v in test_stats.items()}}
         if args.output_dir and utils.is_main_process():
             with (output_dir / "log.txt").open("a") as f:
                 f.write(json.dumps(log_stats) + "\n")
-
         return
     
- 
-    
+    # Training loop
     print("Start training")
     start_time = time.time()
     best_map_holder = BestMetricHolder(use_ema=False)
-    
-    print(f"Training will run for {args.epochs} epochs, starting from epoch {args.start_epoch}")
 
-    for epoch in range(args.start_epoch, args.epochs):
-        print(f"Starting epoch {epoch}")
+    # 使用tqdm包装训练主循环以显示总体进度
+    epoch_progress_bar = tqdm(range(args.start_epoch, args.epochs), 
+                              desc="Training Progress", 
+                              total=args.epochs - args.start_epoch,
+                              position=0)
+    # for epoch in range(args.start_epoch, args.epochs):
+    for epoch in epoch_progress_bar:
         epoch_start_time = time.time()
         if args.distributed:
             sampler_train.set_epoch(epoch)
-            print("Sampler epoch set")
 
-        print("Calling train_one_epoch...")
         train_stats = train_one_epoch(
             model, criterion, data_loader_train, optimizer, device, epoch,
-            args.clip_max_norm, wo_class_error=wo_class_error, lr_scheduler=lr_scheduler, args=args, logger=(logger if args.save_log else None))
-        print(f"train_one_epoch completed for epoch {epoch}")
-        
-        if args.output_dir:
-            checkpoint_paths = [output_dir / 'checkpoint.pth']
+            args.clip_max_norm, wo_class_error=wo_class_error,
+            lr_scheduler=lr_scheduler, args=args,
+            logger=(logger if args.save_log else None)
+        )
 
         if not args.onecyclelr:
-            print("Stepping learning rate scheduler")
             lr_scheduler.step()
-        if args.output_dir:
-            checkpoint_paths = [output_dir / 'checkpoint.pth']
-            # extra checkpoint before LR drop and every 100 epochs
-            if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
-                checkpoint_paths.append(output_dir / f'checkpoint{epoch:04}.pth')
-            for checkpoint_path in checkpoint_paths:
-                weights = {
-                    'model': model_without_ddp.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'lr_scheduler': lr_scheduler.state_dict(),
-                    'epoch': epoch,
-                    'args': args,
-                }
 
-                utils.save_on_master(weights, checkpoint_path)
-                
-        # eval
-        print("Starting evaluation...")
+        # Evaluation
         test_stats, coco_evaluator = evaluate(
-            model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir,
-            wo_class_error=wo_class_error, args=args, logger=(logger if args.save_log else None)
+            model, criterion, postprocessors, data_loader_val, base_ds, device,
+            args.output_dir, wo_class_error=wo_class_error, args=args,
+            logger=(logger if args.save_log else None)
         )
-        print("Evaluation completed")
-        map_regular = test_stats['coco_eval_bbox'][0]
+
+        # 获取 mAP 和 AP50
+        # coco_eval_bbox 包含: [AP, AP50, AP75, APs, APm, APl, AR1, AR10, AR100, ARs, ARm, ARl]
+        map_regular = test_stats['coco_eval_bbox'][0]  # mAP (AP@[.5:.95])
+        ap50 = test_stats['coco_eval_bbox'][1]  # AP@50
+        
         _isbest = best_map_holder.update(map_regular, epoch, is_ema=False)
-        if _isbest:
-            checkpoint_path = output_dir / 'checkpoint_best_regular.pth'
-            utils.save_on_master({
-                'model': model_without_ddp.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'lr_scheduler': lr_scheduler.state_dict(),
-                'epoch': epoch,
-                'args': args,
-            }, checkpoint_path)
+
+        if utils.is_main_process():
+            if _isbest:
+                logger.info(f"★ New best mAP: {map_regular:.4f} (AP50: {ap50:.4f}) at epoch {epoch}")
+            else:
+                logger.info(f"Current mAP: {map_regular:.4f} (AP50: {ap50:.4f}) | "
+                        f"Best mAP: {best_map_holder.best_all.best_res:.4f} at epoch {best_map_holder.best_all.best_ep}")
+
+        # Save checkpoint
+        if args.output_dir:
+            if utils.is_main_process():
+                save_best_only = getattr(args, 'save_best_only', False)
+                
+                if args.use_lora:
+                    # LoRA 模式
+                    if save_best_only:
+                        # 只保存最佳模型
+                        if _isbest:
+                            best_dir = output_dir / "lora_checkpoint_best"
+                            best_dir.mkdir(parents=True, exist_ok=True)
+                            model_without_ddp.save_pretrained(best_dir)
+                            torch.save({
+                                'epoch': epoch,
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': vars(args),
+                            }, best_dir / "training_state.pth")
+                            logger.info(f"Saved best LoRA checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                    else:
+                        # 保存 latest checkpoint
+                        save_lora_model(
+                            model_without_ddp, args.output_dir,
+                            epoch=None,  # latest checkpoint
+                            optimizer=optimizer,
+                            lr_scheduler=lr_scheduler,
+                            args=args,
+                            map_score=map_regular,
+                            ap50_score=ap50
+                        )
+                        
+                        # 定期保存带 epoch 的 checkpoint
+                        if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
+                            save_lora_model(
+                                model_without_ddp, args.output_dir,
+                                epoch=epoch,
+                                optimizer=optimizer,
+                                lr_scheduler=lr_scheduler,
+                                args=args,
+                                map_score=map_regular,
+                                ap50_score=ap50
+                            )
+                        
+                        # 保存最佳模型
+                        if _isbest:
+                            best_dir = output_dir / "lora_checkpoint_best"
+                            best_dir.mkdir(parents=True, exist_ok=True)
+                            model_without_ddp.save_pretrained(best_dir)
+                            torch.save({
+                                'epoch': epoch,
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': vars(args),
+                            }, best_dir / "training_state.pth")
+                            logger.info(f"Saved best LoRA checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                else:
+                    # 非 LoRA 模式
+                    if save_best_only:
+                        # 只保存最佳模型
+                        if _isbest:
+                            checkpoint_path = output_dir / 'checkpoint_best.pth'
+                            utils.save_on_master({
+                                'model': model_without_ddp.state_dict(),
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'epoch': epoch,
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': args,
+                            }, checkpoint_path)
+                            logger.info(f"Saved best checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                    else:
+                        # 原始保存逻辑
+                        checkpoint_paths = [output_dir / 'checkpoint.pth']
+                        if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
+                            checkpoint_paths.append(output_dir / f'checkpoint{epoch:04}.pth')
+                        
+                        for checkpoint_path in checkpoint_paths:
+                            weights = {
+                                'model': model_without_ddp.state_dict(),
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'epoch': epoch,
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': args,
+                            }
+                            utils.save_on_master(weights, checkpoint_path)
+                        
+                        # 保存最佳模型
+                        if _isbest:
+                            checkpoint_path = output_dir / 'checkpoint_best_regular.pth'
+                            utils.save_on_master({
+                                'model': model_without_ddp.state_dict(),
+                                'optimizer': optimizer.state_dict(),
+                                'lr_scheduler': lr_scheduler.state_dict(),
+                                'epoch': epoch,
+                                'mAP': map_regular,
+                                'AP50': ap50,
+                                'args': args,
+                            }, checkpoint_path)
+                            logger.info(f"Saved best checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+
         log_stats = {
             **{f'train_{k}': v for k, v in train_stats.items()},
             **{f'test_{k}': v for k, v in test_stats.items()},
         }
 
+        # 添加最佳指标到日志
+        log_stats['best_mAP'] = best_map_holder.best_all.best_res
+        log_stats['best_epoch'] = best_map_holder.best_all.best_ep
+
         try:
             log_stats.update({'now_time': str(datetime.datetime.now())})
         except:
             pass
-        
+
         epoch_time = time.time() - epoch_start_time
         epoch_time_str = str(datetime.timedelta(seconds=int(epoch_time)))
         log_stats['epoch_time'] = epoch_time_str
@@ -486,7 +823,6 @@ def main(args):
             with (output_dir / "log.txt").open("a") as f:
                 f.write(json.dumps(log_stats) + "\n")
 
-            # for evaluation logs
             if coco_evaluator is not None:
                 (output_dir / 'eval').mkdir(exist_ok=True)
                 if "bbox" in coco_evaluator.coco_eval:
@@ -494,11 +830,35 @@ def main(args):
                     if epoch % 50 == 0:
                         filenames.append(f'{epoch:03}.pth')
                     for name in filenames:
-                        torch.save(coco_evaluator.coco_eval["bbox"].eval,
-                                   output_dir / "eval" / name)
-        print(f"Completed epoch {epoch}")
+                        torch.save(
+                            coco_evaluator.coco_eval["bbox"].eval,
+                            output_dir / "eval" / name
+                        )
 
-    # remove the copied files.
+    # 训练结束后合并 LoRA 权重（可选）
+    if args.use_lora and args.merge_lora_after_train and utils.is_main_process():
+        logger.info("Merging LoRA weights into base model...")
+        merged_model = model_without_ddp.merge_and_unload()
+        merged_path = output_dir / "merged_model.pth"
+        torch.save({
+            'model': merged_model.state_dict(),
+            'best_mAP': best_map_holder.best_all.best_res,
+            'best_epoch': best_map_holder.best_all.best_ep,
+        }, merged_path)
+        logger.info(f"Merged model saved to {merged_path}")
+
+    # 打印最佳结果总结
+    if utils.is_main_process():
+        logger.info("=" * 50)
+        logger.info("Training completed!")
+        logger.info(f"Best mAP: {best_map_holder.best_all.best_res:.4f} at epoch {best_map_holder.best_all.best_ep}")
+        logger.info("=" * 50)
+
+    total_time = time.time() - start_time
+    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+    print('Training time {}'.format(total_time_str))
+
+    # Cleanup
     copyfilelist = vars(args).get('copyfilelist')
     if copyfilelist and args.local_rank == 0:
         from datasets.data_util import remove
@@ -508,7 +868,10 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
+    parser = argparse.ArgumentParser(
+        'DETR training and evaluation script',
+        parents=[get_args_parser()]
+    )
     args = parser.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)

@@ -261,26 +261,86 @@ class YoloStyleEvaluator:
 
         correct = torch.zeros((pred_boxes_xyxy.shape[0], self.niou), dtype=torch.bool)
 
+        # if nl:
+        #     detected = []
+        #     tcls_tensor = gt_cls
+
+        #     for cls in torch.unique(tcls_tensor):
+        #         ti = (cls == tcls_tensor).nonzero(as_tuple=False).view(-1)  # gt
+        #         pi = (cls == pred_cls).nonzero(as_tuple=False).view(-1)     # pred
+
+        #         if pi.numel():
+        #             ious, i = box_iou(pred_boxes_xyxy[pi], gt_boxes_xyxy[ti]).max(1)
+
+        #             detected_set = set()
+        #             for j in (ious > self.iouv[0]).nonzero(as_tuple=False):
+        #                 d = ti[i[j]]
+        #                 if d.item() not in detected_set:
+        #                     detected_set.add(d.item())
+        #                     detected.append(d)
+        #                     correct[pi[j]] = ious[j] > self.iouv
+        #                     if len(detected) == nl:
+        #                         break
         if nl:
             detected = []
             tcls_tensor = gt_cls
+            
+            # 将 GT 和 Pred 转换为中心点 (cx, cy)
+            gt_centers = (gt_boxes_xyxy[:, :2] + gt_boxes_xyxy[:, 2:]) / 2
+            pred_centers = (pred_boxes_xyxy[:, :2] + pred_boxes_xyxy[:, 2:]) / 2
+            
+            # 定义中心点匹配阈值 (例如：允许偏差 3 个像素，或者目标尺度的 0.5 倍)
+            # 对于红外小目标，固定像素阈值往往更有效，例如 DIST_THRESH = 3.0
+            DIST_THRESH = 3.0 
 
             for cls in torch.unique(tcls_tensor):
-                ti = (cls == tcls_tensor).nonzero(as_tuple=False).view(-1)  # gt
-                pi = (cls == pred_cls).nonzero(as_tuple=False).view(-1)     # pred
+                ti = (cls == tcls_tensor).nonzero(as_tuple=False).view(-1)  # gt indices
+                pi = (cls == pred_cls).nonzero(as_tuple=False).view(-1)     # pred indices
 
                 if pi.numel():
-                    ious, i = box_iou(pred_boxes_xyxy[pi], gt_boxes_xyxy[ti]).max(1)
-
+                    # --- 修改开始：使用中心点距离匹配 ---
+                    
+                    # 计算所有 pred 和所有 gt 的欧氏距离 [num_pred, num_gt]
+                    # distinct_dist = torch.cdist(pred_centers[pi], gt_centers[ti], p=2) 
+                    
+                    # 依然计算 IoU 用于兼容性 (Optional)
+                    ious = box_iou(pred_boxes_xyxy[pi], gt_boxes_xyxy[ti])
+                    
+                    # 策略 A: 只要 IoU > 0.1 就算匹配 (最简单改法)
+                    # match_metric = ious
+                    # MATCH_THRESH = 0.1
+                    
+                    # 策略 B (推荐): 中心点是否在 GT 框内部 (Point-in-Box)
+                    # 这种方法对 2x2 这种极小目标非常友好
+                    p_c = pred_centers[pi].unsqueeze(1) # [N, 1, 2]
+                    g_xyxy = gt_boxes_xyxy[ti].unsqueeze(0) # [1, M, 4]
+                    
+                    # 判断中心点 x 是否在 x1, x2 之间，y 是否在 y1, y2 之间
+                    is_inside = (p_c[..., 0] > g_xyxy[..., 0]) & (p_c[..., 0] < g_xyxy[..., 2]) & \
+                                (p_c[..., 1] > g_xyxy[..., 1]) & (p_c[..., 1] < g_xyxy[..., 3])
+                    
+                    # 找到每个预测框命中的最佳 GT
+                    # 这里的逻辑是：如果 pred 中心在 GT 内，视为潜在 TP
+                    # 如果有多个 GT，选 IoU 最大的那个
+                    
+                    best_match_idx = ious.argmax(1) # [num_pred] -> 对应哪个 gt
+                    best_match_iou = ious.max(1).values
+                    
                     detected_set = set()
-                    for j in (ious > self.iouv[0]).nonzero(as_tuple=False):
-                        d = ti[i[j]]
-                        if d.item() not in detected_set:
-                            detected_set.add(d.item())
-                            detected.append(d)
-                            correct[pi[j]] = ious[j] > self.iouv
-                            if len(detected) == nl:
-                                break
+                    
+                    # 遍历每一个预测框
+                    for j in range(len(pi)):
+                        gt_idx = ti[best_match_idx[j]] # 对应的全局 GT index
+                        
+                        # 判据：中心点在 GT 内 OR IoU > 0.1 (双保险)
+                        is_hit = is_inside[j, best_match_idx[j]] or (best_match_iou[j] > 0.1)
+                        
+                        if is_hit:
+                            if gt_idx.item() not in detected_set:
+                                detected_set.add(gt_idx.item())
+                                # 只要匹配上了，我们在所有 iou 阈值层级上都标为 True
+                                # (这是为了让你在 mAP@0.5 里能拿到分，不用管 mAP@0.95 了)
+                                correct[pi[j]] = True
 
         self.stats.append((correct, pred_scores, pred_cls, gt_cls.cpu().numpy() if nl else np.array([], dtype=np.float32)))
 

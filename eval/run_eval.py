@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 # 你常改的参数都集中放这里
 CFG = {
     # dataset
-    "images_dir": "data/sirst/images/test",
-    "coco_gt": "data/sirst/annotations/test.json",
+    "images_dir": "data/NUDT-SIRST/images/test",
+    "coco_gt": "data/NUDT-SIRST/annotations/test.json",
 
     # model
     "config": "config/cfg_odvg.py",
-    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_0121_exp2/merged_model.pth",
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_0206_exp1_D/merged_model.pth",
     "text_prompt": "Infrared small target",
 
     # thresholds (对齐你确认的口径)
@@ -30,7 +30,7 @@ CFG = {
     "force_single_class": False, # 若你的 COCO 有多类但你只做单类prompt，可设 True
 
     # output
-    "output_dir": "eval_output/test/SIRST_withHR",
+    "output_dir": "eval_output/0206_all_exp1/NUDT-SIRST",
     "save_pred_json": True,
     "save_pr_curve_data": True,
 }
