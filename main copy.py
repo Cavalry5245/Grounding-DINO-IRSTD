@@ -85,11 +85,11 @@ def get_args_parser():
     parser.add_argument('--lora_target_modules', type=str, nargs='+',
                         default=[
                             # Image Backbone (Swin Transformer)
-                            "patch_embed.proj",
-                            "attn.qkv",
-                            "attn.proj",
-                            "mlp.fc1",
-                            "mlp.fc2",
+                            "proj",
+                            "qkv",
+                            "proj",
+                            "fc1",
+                            "fc2",
                             # Transformer Encoder & Decoder (Deformable DETR)
                             "sampling_offsets",
                             "attention_weights",
@@ -222,7 +222,7 @@ def apply_lora(model, args, logger=None):
         logger.info("=" * 50)
         logger.info("Trainable Parameter Summary:")
         logger.info(f"  Total params:      {total_params:>12,}")
-        logger.info(f"  Trainable params:  {trainable_params:>12,} ({100*trainable_params/total_params:.2f}%)")
+        logger.info(f"  Trainable params:  {trainable_params:>12,} ({100*trainable_params/total_params:.4f}%)")
         logger.info(f"    - LoRA:          {lora_params:>12,}")
         logger.info(f"    - Det. heads:    {head_params:>12,}")
         logger.info(f"    - Other:         {other_params:>12,}")
@@ -535,6 +535,13 @@ def main(args):
         map_regular = test_stats['coco_eval_bbox'][0]
         ap50 = test_stats['coco_eval_bbox'][1]
         _isbest = best_map_holder.update(map_regular, epoch, is_ema=False)
+
+        if utils.is_main_process():
+            if _isbest:
+                logger.info(f"★ New best mAP: {map_regular:.4f} (AP50: {ap50:.4f}) at epoch {epoch}")
+            else:
+                logger.info(f"Current mAP: {map_regular:.4f} (AP50: {ap50:.4f}) | "
+                        f"Best mAP: {best_map_holder.best_all.best_res:.4f} at epoch {best_map_holder.best_all.best_ep}")
 
         # Save checkpoint
         if args.output_dir and utils.is_main_process():

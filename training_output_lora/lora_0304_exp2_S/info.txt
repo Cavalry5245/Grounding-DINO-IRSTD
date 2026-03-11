@@ -1,0 +1,308 @@
+[32mINFO    [0m [32m2026-03-04 15:59:23,190 | [34mgit:
+  sha: 56a1faf404e8c22327fe33a5a3e846077b27c65f, status: has uncommited changes, branch: main
+[0m
+[32mINFO    [0m [32m2026-03-04 15:59:23,191 | [34mCommand: main.py --output_dir ./training_output_lora/lora_0304_exp2_S -c ./config/cfg_odvg.py --datasets ./config/datasets_mixed_odvg.json --pretrain_model_path /media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth --num_workers 8 --options text_encoder_type=/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased --use_lora --lora_r 16 --lora_alpha 32 --lora_dropout 0.05 --lora_bias none --lora_target_modules qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj v_proj l_proj values_v_proj values_l_proj out_v_proj out_l_proj linear1 linear2 --lora_unfreeze_layers class_embed bbox_embed label_enc --hf_lora_modules qkv fc1 fc2 --save_best_only --find_unused_params[0m
+[32mINFO    [0m [32m2026-03-04 15:59:23,193 | [34mFull config saved to ./training_output_lora/lora_0304_exp2_S/config_args_all.json[0m
+[32mINFO    [0m [32m2026-03-04 15:59:23,193 | [34mworld size: 2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:23,194 | [34mrank: 0[0m
+[32mINFO    [0m [32m2026-03-04 15:59:23,194 | [34mlocal_rank: 0[0m
+[32mINFO    [0m [32m2026-03-04 15:59:23,195 | [34margs: Namespace(config_file='./config/cfg_odvg.py', options={'text_encoder_type': '/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased'}, datasets='./config/datasets_mixed_odvg.json', remove_difficult=False, fix_size=False, output_dir='./training_output_lora/lora_0304_exp2_S', note='', device='cuda', seed=42, resume='', pretrain_model_path='/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth', finetune_ignore=None, start_epoch=0, eval=False, num_workers=8, test=False, debug=False, find_unused_params=True, save_results=False, save_log=False, world_size=2, dist_url='env://', rank=0, local_rank=0, amp=False, use_lora=True, lora_r=16, lora_alpha=32, lora_dropout=0.05, lora_target_modules=['qkv', 'proj', 'fc1', 'fc2', 'sampling_offsets', 'attention_weights', 'value_proj', 'output_proj', 'v_proj', 'l_proj', 'values_v_proj', 'values_l_proj', 'out_v_proj', 'out_l_proj', 'linear1', 'linear2'], lora_bias='none', lora_resume='', merge_lora_after_train=False, lora_unfreeze_layers=['class_embed', 'bbox_embed', 'label_enc'], hf_lora_modules=['qkv', 'fc1', 'fc2'], save_best_only=True, gpu=0, distributed=True, dist_backend='nccl', data_aug_scales=[480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800], data_aug_max_size=1333, data_aug_scales2_resize=[400, 500, 600], data_aug_scales2_crop=[384, 600], data_aug_scale_overlap=None, batch_size=8, modelname='groundingdino', backbone='swin_T_224_1k', position_embedding='sine', pe_temperatureH=20, pe_temperatureW=20, return_interm_indices=[1, 2, 3], enc_layers=6, dec_layers=6, pre_norm=False, dim_feedforward=2048, hidden_dim=256, dropout=0.0, nheads=8, num_queries=900, query_dim=4, num_patterns=0, num_feature_levels=4, enc_n_points=4, dec_n_points=4, two_stage_type='standard', two_stage_bbox_embed_share=False, two_stage_class_embed_share=False, transformer_activation='relu', dec_pred_bbox_embed_share=True, dn_box_noise_scale=1.0, dn_label_noise_ratio=0.5, dn_label_coef=1.0, dn_bbox_coef=1.0, embed_init_tgt=True, dn_labelbook_size=2, max_text_len=256, text_encoder_type='/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased', use_text_enhancer=True, use_fusion_layer=True, use_checkpoint=True, use_transformer_ckpt=True, use_text_cross_attention=True, text_dropout=0.0, fusion_dropout=0.0, fusion_droppath=0.1, sub_sentence_present=True, max_labels=50, lr=0.0001, backbone_freeze_keywords=None, freeze_keywords=['bert'], lr_backbone=1e-05, lr_backbone_names=['backbone.0', 'bert'], lr_linear_proj_mult=1e-05, lr_linear_proj_names=['ref_point_head', 'sampling_offsets'], weight_decay=0.0001, param_dict_type='ddetr_in_mmdet', lr_hr_fusion=0.0001, lr_other=1e-05, ddetr_lr_param=False, epochs=20, lr_drop=10, save_checkpoint_interval=1, clip_max_norm=0.1, onecyclelr=False, multi_step_lr=False, lr_drop_list=[4, 8], frozen_weights=None, dilation=False, pdetr3_bbox_embed_diff_each_layer=False, pdetr3_refHW=-1, random_refpoints_xy=False, fix_refpoints_hw=-1, dabdetr_yolo_like_anchor_update=False, dabdetr_deformable_encoder=False, dabdetr_deformable_decoder=False, use_deformable_box_attn=False, box_attn_type='roi_align', dec_layer_number=None, decoder_layer_noise=False, dln_xy_noise=0.2, dln_hw_noise=0.2, add_channel_attention=False, add_pos_value=False, two_stage_pat_embed=0, two_stage_add_query_num=0, two_stage_learn_wh=False, two_stage_default_hw=0.05, two_stage_keep_all_tokens=False, num_select=300, batch_norm_type='FrozenBatchNorm2d', masks=False, aux_loss=True, set_cost_class=1.0, set_cost_bbox=5.0, set_cost_giou=2.0, cls_loss_coef=2.0, bbox_loss_coef=5.0, giou_loss_coef=0.0, nwd_loss_coef=10.0, enc_loss_coef=1.0, interm_loss_coef=1.0, no_interm_box_loss=False, mask_loss_coef=1.0, dice_loss_coef=1.0, focal_alpha=0.25, focal_gamma=2.0, decoder_sa_type='sa', matcher_type='HungarianMatcher', decoder_module_seq=['sa', 'ca', 'ffn'], nms_iou_threshold=-1, dec_pred_class_embed_share=True, match_unstable_error=True, use_ema=False, ema_decay=0.9997, ema_epoch=0, use_detached_boxes_dec_out=False, use_coco_eval=False, dn_scalar=100, label_list=['infrared small target'], use_hr_branch=False, hr_fusion_type='cat', freeze_swin=False)
+[0m
+[36mDEBUG   [0m [36m2026-03-04 15:59:23,196 | [34mbuild model ... ...[0m
+[36mDEBUG   [0m [36m2026-03-04 15:59:26,138 | [34mbuild model, done.[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,138 | [34mLoading pretrained model from /media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,706 | [34mLoRA target modules: ['qkv', 'proj', 'fc1', 'fc2', 'sampling_offsets', 'attention_weights', 'value_proj', 'output_proj', 'v_proj', 'l_proj', 'values_v_proj', 'values_l_proj', 'out_v_proj', 'out_l_proj', 'linear1', 'linear2'][0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,707 | [34mHF-LoRA modules: ['qkv', 'fc1', 'fc2'][0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,707 | [34mLayers to unfreeze: ['class_embed', 'bbox_embed', 'label_enc'][0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,830 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,830 | [34mLoRA Injection: 168 layers replaced[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,831 | [34m  Standard LoRA: 132 | HF-LoRA: 36[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,831 | [34m  r=16, alpha=32, scaling=2.0, dropout=0.05[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,831 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,831 | [34m  [   LoRA] transformer.encoder.layers.0.linear1[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,832 | [34m  [   LoRA] transformer.encoder.layers.0.linear2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,832 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,832 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,833 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,833 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,834 | [34m  [   LoRA] transformer.encoder.layers.1.linear1[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,834 | [34m  [   LoRA] transformer.encoder.layers.1.linear2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,834 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,834 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,835 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,835 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,835 | [34m  [   LoRA] transformer.encoder.layers.2.linear1[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,835 | [34m  [   LoRA] transformer.encoder.layers.2.linear2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,836 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,836 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,836 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,836 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,837 | [34m  [   LoRA] transformer.encoder.layers.3.linear1[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,837 | [34m  [   LoRA] transformer.encoder.layers.3.linear2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,837 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,837 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,838 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,838 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,838 | [34m  [   LoRA] transformer.encoder.layers.4.linear1[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,838 | [34m  [   LoRA] transformer.encoder.layers.4.linear2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,838 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,839 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,839 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,839 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,839 | [34m  [   LoRA] transformer.encoder.layers.5.linear1[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,840 | [34m  [   LoRA] transformer.encoder.layers.5.linear2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,840 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,840 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,840 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,841 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,841 | [34m  [   LoRA] transformer.encoder.text_layers.0.linear1[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,842 | [34m  [   LoRA] transformer.encoder.text_layers.0.linear2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,842 | [34m  [   LoRA] transformer.encoder.text_layers.1.linear1[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,842 | [34m  [   LoRA] transformer.encoder.text_layers.1.linear2[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,843 | [34m  ... and 128 more[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,843 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,861 | [34mUnfroze 12 param tensors (265,224 params):[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,862 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.0.weight[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,862 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.0.bias[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,862 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.1.weight[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,862 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.1.bias[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,863 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.2.weight[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,863 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.2.bias[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,863 | [34m  ✓ transformer.enc_out_bbox_embed.layers.0.weight[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,863 | [34m  ✓ transformer.enc_out_bbox_embed.layers.0.bias[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,864 | [34m  ✓ transformer.enc_out_bbox_embed.layers.1.weight[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,864 | [34m  ✓ transformer.enc_out_bbox_embed.layers.1.bias[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,864 | [34m  ✓ transformer.enc_out_bbox_embed.layers.2.weight[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,864 | [34m  ✓ transformer.enc_out_bbox_embed.layers.2.bias[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,886 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,886 | [34mTrainable Parameter Summary:[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,887 | [34m  Total params:       176,208,322[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,887 | [34m  Trainable params:     3,633,864 (2.0623%)[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,887 | [34m    - LoRA (A+B):       3,366,912[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,887 | [34m    - HF-Conv:              1,728[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,887 | [34m    - Det. heads:         265,224[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,888 | [34m    - Other:                    0[0m
+[32mINFO    [0m [32m2026-03-04 15:59:26,888 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-04 15:59:27,074 | [34mnumber of params:3633864[0m
+[32mINFO    [0m [32m2026-03-04 15:59:27,081 | [34mOptimizing 384 LoRA parameter tensors[0m
+[36mDEBUG   [0m [36m2026-03-04 15:59:27,081 | [34mbuild dataset ... ...[0m
+[36mDEBUG   [0m [36m2026-03-04 15:59:27,084 | [34mbuild dataset, done.[0m
+[36mDEBUG   [0m [36m2026-03-04 15:59:27,084 | [34mnumber of training dataset: 1, samples: 256[0m
+[32mINFO    [0m [32m2026-03-04 16:00:33,581 | [34m★ New best mAP: 0.1163 (AP50: 0.3224) at epoch 0[0m
+[32mINFO    [0m [32m2026-03-04 16:00:33,820 | [34mSaved LoRA checkpoint (384 tensors) to training_output_lora/lora_0304_exp2_S/lora_checkpoint_best[0m
+[32mINFO    [0m [32m2026-03-04 16:00:33,822 | [34mSaved best LoRA checkpoint at epoch 0 with mAP=0.1163, AP50=0.3224[0m
+[32mINFO    [0m [32m2026-03-04 16:01:38,208 | [34m★ New best mAP: 0.3815 (AP50: 0.8582) at epoch 1[0m
+[32mINFO    [0m [32m2026-03-04 16:01:38,505 | [34mSaved LoRA checkpoint (384 tensors) to training_output_lora/lora_0304_exp2_S/lora_checkpoint_best[0m
+[32mINFO    [0m [32m2026-03-04 16:01:38,506 | [34mSaved best LoRA checkpoint at epoch 1 with mAP=0.3815, AP50=0.8582[0m
+[32mINFO    [0m [32m2026-03-04 16:02:41,582 | [34m★ New best mAP: 0.4305 (AP50: 0.9773) at epoch 2[0m
+[32mINFO    [0m [32m2026-03-04 16:02:41,894 | [34mSaved LoRA checkpoint (384 tensors) to training_output_lora/lora_0304_exp2_S/lora_checkpoint_best[0m
+[32mINFO    [0m [32m2026-03-04 16:02:41,896 | [34mSaved best LoRA checkpoint at epoch 2 with mAP=0.4305, AP50=0.9773[0m
+[32mINFO    [0m [32m2026-03-04 16:03:47,780 | [34mCurrent mAP: 0.4298 (AP50: 0.9777) | Best mAP: 0.4305 at epoch 2[0m
+[32mINFO    [0m [32m2026-03-04 16:04:51,902 | [34m★ New best mAP: 0.4417 (AP50: 0.9775) at epoch 4[0m
+[32mINFO    [0m [32m2026-03-04 16:04:52,178 | [34mSaved LoRA checkpoint (384 tensors) to training_output_lora/lora_0304_exp2_S/lora_checkpoint_best[0m
+[32mINFO    [0m [32m2026-03-04 16:04:52,180 | [34mSaved best LoRA checkpoint at epoch 4 with mAP=0.4417, AP50=0.9775[0m
+[32mINFO    [0m [32m2026-03-04 16:05:55,974 | [34m★ New best mAP: 0.4425 (AP50: 0.9778) at epoch 5[0m
+[32mINFO    [0m [32m2026-03-04 16:05:56,263 | [34mSaved LoRA checkpoint (384 tensors) to training_output_lora/lora_0304_exp2_S/lora_checkpoint_best[0m
+[32mINFO    [0m [32m2026-03-04 16:05:56,264 | [34mSaved best LoRA checkpoint at epoch 5 with mAP=0.4425, AP50=0.9778[0m
+[32mINFO    [0m [32m2026-03-04 16:07:03,317 | [34mCurrent mAP: 0.4335 (AP50: 0.9782) | Best mAP: 0.4425 at epoch 5[0m
+[32mINFO    [0m [32m2026-03-04 16:08:07,591 | [34m★ New best mAP: 0.4571 (AP50: 0.9782) at epoch 7[0m
+[32mINFO    [0m [32m2026-03-04 16:08:07,875 | [34mSaved LoRA checkpoint (384 tensors) to training_output_lora/lora_0304_exp2_S/lora_checkpoint_best[0m
+[32mINFO    [0m [32m2026-03-04 16:08:07,876 | [34mSaved best LoRA checkpoint at epoch 7 with mAP=0.4571, AP50=0.9782[0m
+[32mINFO    [0m [32m2026-03-04 16:09:11,503 | [34m★ New best mAP: 0.4578 (AP50: 0.9784) at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:09:11,799 | [34mSaved LoRA checkpoint (384 tensors) to training_output_lora/lora_0304_exp2_S/lora_checkpoint_best[0m
+[32mINFO    [0m [32m2026-03-04 16:09:11,800 | [34mSaved best LoRA checkpoint at epoch 8 with mAP=0.4578, AP50=0.9784[0m
+[32mINFO    [0m [32m2026-03-04 16:10:17,047 | [34mCurrent mAP: 0.4516 (AP50: 0.9779) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:11:20,673 | [34mCurrent mAP: 0.4530 (AP50: 0.9778) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:12:25,023 | [34mCurrent mAP: 0.4536 (AP50: 0.9779) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:13:26,599 | [34mCurrent mAP: 0.4541 (AP50: 0.9779) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:14:29,345 | [34mCurrent mAP: 0.4497 (AP50: 0.9779) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:15:29,913 | [34mCurrent mAP: 0.4564 (AP50: 0.9781) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:16:34,585 | [34mCurrent mAP: 0.4557 (AP50: 0.9782) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:17:37,248 | [34mCurrent mAP: 0.4540 (AP50: 0.9779) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:18:43,957 | [34mCurrent mAP: 0.4575 (AP50: 0.9780) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:19:50,060 | [34mCurrent mAP: 0.4561 (AP50: 0.9780) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:20:53,656 | [34mCurrent mAP: 0.4557 (AP50: 0.9782) | Best mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:20:53,661 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:20:53,662 | [34mTraining completed![0m
+[32mINFO    [0m [32m2026-03-04 16:20:53,662 | [34mBest mAP: 0.4578 at epoch 8[0m
+[32mINFO    [0m [32m2026-03-04 16:20:53,662 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:27:07,941 | [34mgit:
+  sha: 56a1faf404e8c22327fe33a5a3e846077b27c65f, status: has uncommited changes, branch: main
+[0m
+[32mINFO    [0m [32m2026-03-04 16:27:07,942 | [34mCommand: main.py --output_dir ./training_output_lora/lora_0304_exp2_S -c ./config/cfg_odvg.py --datasets ./config/datasets_mixed_odvg.json --pretrain_model_path /media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth --num_workers 8 --options text_encoder_type=/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased --use_lora --lora_r 16 --lora_alpha 32 --lora_dropout 0.05 --lora_bias none --lora_target_modules qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj v_proj l_proj values_v_proj values_l_proj out_v_proj out_l_proj linear1 linear2 --lora_unfreeze_layers class_embed bbox_embed label_enc --merge_lora_after_train --hf_lora_modules qkv fc1 fc2 --save_best_only --find_unused_params[0m
+[32mINFO    [0m [32m2026-03-04 16:27:07,943 | [34mFull config saved to ./training_output_lora/lora_0304_exp2_S/config_args_all.json[0m
+[32mINFO    [0m [32m2026-03-04 16:27:07,943 | [34mworld size: 2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:07,943 | [34mrank: 0[0m
+[32mINFO    [0m [32m2026-03-04 16:27:07,944 | [34mlocal_rank: 0[0m
+[32mINFO    [0m [32m2026-03-04 16:27:07,944 | [34margs: Namespace(config_file='./config/cfg_odvg.py', options={'text_encoder_type': '/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased'}, datasets='./config/datasets_mixed_odvg.json', remove_difficult=False, fix_size=False, output_dir='./training_output_lora/lora_0304_exp2_S', note='', device='cuda', seed=42, resume='', pretrain_model_path='/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth', finetune_ignore=None, start_epoch=0, eval=False, num_workers=8, test=False, debug=False, find_unused_params=True, save_results=False, save_log=False, world_size=2, dist_url='env://', rank=0, local_rank=0, amp=False, use_lora=True, lora_r=16, lora_alpha=32, lora_dropout=0.05, lora_target_modules=['qkv', 'proj', 'fc1', 'fc2', 'sampling_offsets', 'attention_weights', 'value_proj', 'output_proj', 'v_proj', 'l_proj', 'values_v_proj', 'values_l_proj', 'out_v_proj', 'out_l_proj', 'linear1', 'linear2'], lora_bias='none', lora_resume='', merge_lora_after_train=True, lora_unfreeze_layers=['class_embed', 'bbox_embed', 'label_enc'], hf_lora_modules=['qkv', 'fc1', 'fc2'], save_best_only=True, gpu=0, distributed=True, dist_backend='nccl', data_aug_scales=[480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800], data_aug_max_size=1333, data_aug_scales2_resize=[400, 500, 600], data_aug_scales2_crop=[384, 600], data_aug_scale_overlap=None, batch_size=8, modelname='groundingdino', backbone='swin_T_224_1k', position_embedding='sine', pe_temperatureH=20, pe_temperatureW=20, return_interm_indices=[1, 2, 3], enc_layers=6, dec_layers=6, pre_norm=False, dim_feedforward=2048, hidden_dim=256, dropout=0.0, nheads=8, num_queries=900, query_dim=4, num_patterns=0, num_feature_levels=4, enc_n_points=4, dec_n_points=4, two_stage_type='standard', two_stage_bbox_embed_share=False, two_stage_class_embed_share=False, transformer_activation='relu', dec_pred_bbox_embed_share=True, dn_box_noise_scale=1.0, dn_label_noise_ratio=0.5, dn_label_coef=1.0, dn_bbox_coef=1.0, embed_init_tgt=True, dn_labelbook_size=2, max_text_len=256, text_encoder_type='/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased', use_text_enhancer=True, use_fusion_layer=True, use_checkpoint=True, use_transformer_ckpt=True, use_text_cross_attention=True, text_dropout=0.0, fusion_dropout=0.0, fusion_droppath=0.1, sub_sentence_present=True, max_labels=50, lr=0.0001, backbone_freeze_keywords=None, freeze_keywords=['bert'], lr_backbone=1e-05, lr_backbone_names=['backbone.0', 'bert'], lr_linear_proj_mult=1e-05, lr_linear_proj_names=['ref_point_head', 'sampling_offsets'], weight_decay=0.0001, param_dict_type='ddetr_in_mmdet', lr_hr_fusion=0.0001, lr_other=1e-05, ddetr_lr_param=False, epochs=20, lr_drop=10, save_checkpoint_interval=1, clip_max_norm=0.1, onecyclelr=False, multi_step_lr=False, lr_drop_list=[4, 8], frozen_weights=None, dilation=False, pdetr3_bbox_embed_diff_each_layer=False, pdetr3_refHW=-1, random_refpoints_xy=False, fix_refpoints_hw=-1, dabdetr_yolo_like_anchor_update=False, dabdetr_deformable_encoder=False, dabdetr_deformable_decoder=False, use_deformable_box_attn=False, box_attn_type='roi_align', dec_layer_number=None, decoder_layer_noise=False, dln_xy_noise=0.2, dln_hw_noise=0.2, add_channel_attention=False, add_pos_value=False, two_stage_pat_embed=0, two_stage_add_query_num=0, two_stage_learn_wh=False, two_stage_default_hw=0.05, two_stage_keep_all_tokens=False, num_select=300, batch_norm_type='FrozenBatchNorm2d', masks=False, aux_loss=True, set_cost_class=1.0, set_cost_bbox=5.0, set_cost_giou=2.0, cls_loss_coef=2.0, bbox_loss_coef=5.0, giou_loss_coef=0.0, nwd_loss_coef=10.0, enc_loss_coef=1.0, interm_loss_coef=1.0, no_interm_box_loss=False, mask_loss_coef=1.0, dice_loss_coef=1.0, focal_alpha=0.25, focal_gamma=2.0, decoder_sa_type='sa', matcher_type='HungarianMatcher', decoder_module_seq=['sa', 'ca', 'ffn'], nms_iou_threshold=-1, dec_pred_class_embed_share=True, match_unstable_error=True, use_ema=False, ema_decay=0.9997, ema_epoch=0, use_detached_boxes_dec_out=False, use_coco_eval=False, dn_scalar=100, label_list=['infrared small target'], use_hr_branch=False, hr_fusion_type='cat', freeze_swin=False)
+[0m
+[36mDEBUG   [0m [36m2026-03-04 16:27:07,946 | [34mbuild model ... ...[0m
+[36mDEBUG   [0m [36m2026-03-04 16:27:12,728 | [34mbuild model, done.[0m
+[32mINFO    [0m [32m2026-03-04 16:27:12,729 | [34mLoading pretrained model from /media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth[0m
+[32mINFO    [0m [32m2026-03-04 16:27:13,914 | [34mLoRA target modules: ['qkv', 'proj', 'fc1', 'fc2', 'sampling_offsets', 'attention_weights', 'value_proj', 'output_proj', 'v_proj', 'l_proj', 'values_v_proj', 'values_l_proj', 'out_v_proj', 'out_l_proj', 'linear1', 'linear2'][0m
+[32mINFO    [0m [32m2026-03-04 16:27:13,915 | [34mHF-LoRA modules: ['qkv', 'fc1', 'fc2'][0m
+[32mINFO    [0m [32m2026-03-04 16:27:13,915 | [34mLayers to unfreeze: ['class_embed', 'bbox_embed', 'label_enc'][0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,014 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,015 | [34mLoRA Injection: 168 layers replaced[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,015 | [34m  Standard LoRA: 132 | HF-LoRA: 36[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,015 | [34m  r=16, alpha=32, scaling=2.0, dropout=0.05[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,016 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,016 | [34m  [   LoRA] transformer.encoder.layers.0.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,017 | [34m  [   LoRA] transformer.encoder.layers.0.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,017 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,017 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,017 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,018 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,018 | [34m  [   LoRA] transformer.encoder.layers.1.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,018 | [34m  [   LoRA] transformer.encoder.layers.1.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,019 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,019 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,019 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,020 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,020 | [34m  [   LoRA] transformer.encoder.layers.2.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,021 | [34m  [   LoRA] transformer.encoder.layers.2.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,021 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,021 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,021 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,022 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,022 | [34m  [   LoRA] transformer.encoder.layers.3.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,022 | [34m  [   LoRA] transformer.encoder.layers.3.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,022 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,022 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,023 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,023 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,023 | [34m  [   LoRA] transformer.encoder.layers.4.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,023 | [34m  [   LoRA] transformer.encoder.layers.4.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,023 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,024 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,024 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,024 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,024 | [34m  [   LoRA] transformer.encoder.layers.5.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,025 | [34m  [   LoRA] transformer.encoder.layers.5.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,025 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,025 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,025 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,026 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,027 | [34m  [   LoRA] transformer.encoder.text_layers.0.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,027 | [34m  [   LoRA] transformer.encoder.text_layers.0.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,027 | [34m  [   LoRA] transformer.encoder.text_layers.1.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,027 | [34m  [   LoRA] transformer.encoder.text_layers.1.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,028 | [34m  ... and 128 more[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,028 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,048 | [34mUnfroze 12 param tensors (265,224 params):[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,049 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.0.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,049 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.0.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,049 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.1.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,050 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.1.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,050 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.2.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,051 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.2.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,051 | [34m  ✓ transformer.enc_out_bbox_embed.layers.0.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,051 | [34m  ✓ transformer.enc_out_bbox_embed.layers.0.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,051 | [34m  ✓ transformer.enc_out_bbox_embed.layers.1.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,052 | [34m  ✓ transformer.enc_out_bbox_embed.layers.1.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,052 | [34m  ✓ transformer.enc_out_bbox_embed.layers.2.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,052 | [34m  ✓ transformer.enc_out_bbox_embed.layers.2.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,082 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,083 | [34mTrainable Parameter Summary:[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,083 | [34m  Total params:       176,208,322[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,083 | [34m  Trainable params:     3,633,864 (2.0623%)[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,084 | [34m    - LoRA (A+B):       3,366,912[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,084 | [34m    - HF-Conv:              1,728[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,085 | [34m    - Det. heads:         265,224[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,085 | [34m    - Other:                    0[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,086 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,277 | [34mnumber of params:3633864[0m
+[32mINFO    [0m [32m2026-03-04 16:27:14,286 | [34mOptimizing 384 LoRA parameter tensors[0m
+[36mDEBUG   [0m [36m2026-03-04 16:27:14,288 | [34mbuild dataset ... ...[0m
+[36mDEBUG   [0m [36m2026-03-04 16:27:14,293 | [34mbuild dataset, done.[0m
+[36mDEBUG   [0m [36m2026-03-04 16:27:14,293 | [34mnumber of training dataset: 1, samples: 256[0m
+[32mINFO    [0m [32m2026-03-04 16:28:12,427 | [34mgit:
+  sha: 56a1faf404e8c22327fe33a5a3e846077b27c65f, status: has uncommited changes, branch: main
+[0m
+[32mINFO    [0m [32m2026-03-04 16:28:12,428 | [34mCommand: main.py --output_dir ./training_output_lora/lora_0304_exp2_S -c ./config/cfg_odvg.py --datasets ./config/datasets_mixed_odvg.json --pretrain_model_path /media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth --num_workers 8 --options text_encoder_type=/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased --use_lora --lora_r 16 --lora_alpha 32 --lora_dropout 0.05 --lora_bias none --lora_target_modules qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj v_proj l_proj values_v_proj values_l_proj out_v_proj out_l_proj linear1 linear2 --lora_unfreeze_layers class_embed bbox_embed label_enc --merge_lora_after_train --hf_lora_modules qkv fc1 fc2 --save_best_only --find_unused_params[0m
+[32mINFO    [0m [32m2026-03-04 16:28:12,429 | [34mFull config saved to ./training_output_lora/lora_0304_exp2_S/config_args_all.json[0m
+[32mINFO    [0m [32m2026-03-04 16:28:12,430 | [34mworld size: 2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:12,430 | [34mrank: 0[0m
+[32mINFO    [0m [32m2026-03-04 16:28:12,430 | [34mlocal_rank: 0[0m
+[32mINFO    [0m [32m2026-03-04 16:28:12,430 | [34margs: Namespace(config_file='./config/cfg_odvg.py', options={'text_encoder_type': '/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased'}, datasets='./config/datasets_mixed_odvg.json', remove_difficult=False, fix_size=False, output_dir='./training_output_lora/lora_0304_exp2_S', note='', device='cuda', seed=42, resume='', pretrain_model_path='/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth', finetune_ignore=None, start_epoch=0, eval=False, num_workers=8, test=False, debug=False, find_unused_params=True, save_results=False, save_log=False, world_size=2, dist_url='env://', rank=0, local_rank=0, amp=False, use_lora=True, lora_r=16, lora_alpha=32, lora_dropout=0.05, lora_target_modules=['qkv', 'proj', 'fc1', 'fc2', 'sampling_offsets', 'attention_weights', 'value_proj', 'output_proj', 'v_proj', 'l_proj', 'values_v_proj', 'values_l_proj', 'out_v_proj', 'out_l_proj', 'linear1', 'linear2'], lora_bias='none', lora_resume='', merge_lora_after_train=True, lora_unfreeze_layers=['class_embed', 'bbox_embed', 'label_enc'], hf_lora_modules=['qkv', 'fc1', 'fc2'], save_best_only=True, gpu=0, distributed=True, dist_backend='nccl', data_aug_scales=[480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800], data_aug_max_size=1333, data_aug_scales2_resize=[400, 500, 600], data_aug_scales2_crop=[384, 600], data_aug_scale_overlap=None, batch_size=8, modelname='groundingdino', backbone='swin_T_224_1k', position_embedding='sine', pe_temperatureH=20, pe_temperatureW=20, return_interm_indices=[1, 2, 3], enc_layers=6, dec_layers=6, pre_norm=False, dim_feedforward=2048, hidden_dim=256, dropout=0.0, nheads=8, num_queries=900, query_dim=4, num_patterns=0, num_feature_levels=4, enc_n_points=4, dec_n_points=4, two_stage_type='standard', two_stage_bbox_embed_share=False, two_stage_class_embed_share=False, transformer_activation='relu', dec_pred_bbox_embed_share=True, dn_box_noise_scale=1.0, dn_label_noise_ratio=0.5, dn_label_coef=1.0, dn_bbox_coef=1.0, embed_init_tgt=True, dn_labelbook_size=2, max_text_len=256, text_encoder_type='/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased', use_text_enhancer=True, use_fusion_layer=True, use_checkpoint=True, use_transformer_ckpt=True, use_text_cross_attention=True, text_dropout=0.0, fusion_dropout=0.0, fusion_droppath=0.1, sub_sentence_present=True, max_labels=50, lr=0.0001, backbone_freeze_keywords=None, freeze_keywords=['bert'], lr_backbone=1e-05, lr_backbone_names=['backbone.0', 'bert'], lr_linear_proj_mult=1e-05, lr_linear_proj_names=['ref_point_head', 'sampling_offsets'], weight_decay=0.0001, param_dict_type='ddetr_in_mmdet', lr_hr_fusion=0.0001, lr_other=1e-05, ddetr_lr_param=False, epochs=20, lr_drop=10, save_checkpoint_interval=1, clip_max_norm=0.1, onecyclelr=False, multi_step_lr=False, lr_drop_list=[4, 8], frozen_weights=None, dilation=False, pdetr3_bbox_embed_diff_each_layer=False, pdetr3_refHW=-1, random_refpoints_xy=False, fix_refpoints_hw=-1, dabdetr_yolo_like_anchor_update=False, dabdetr_deformable_encoder=False, dabdetr_deformable_decoder=False, use_deformable_box_attn=False, box_attn_type='roi_align', dec_layer_number=None, decoder_layer_noise=False, dln_xy_noise=0.2, dln_hw_noise=0.2, add_channel_attention=False, add_pos_value=False, two_stage_pat_embed=0, two_stage_add_query_num=0, two_stage_learn_wh=False, two_stage_default_hw=0.05, two_stage_keep_all_tokens=False, num_select=300, batch_norm_type='FrozenBatchNorm2d', masks=False, aux_loss=True, set_cost_class=1.0, set_cost_bbox=5.0, set_cost_giou=2.0, cls_loss_coef=2.0, bbox_loss_coef=5.0, giou_loss_coef=0.0, nwd_loss_coef=10.0, enc_loss_coef=1.0, interm_loss_coef=1.0, no_interm_box_loss=False, mask_loss_coef=1.0, dice_loss_coef=1.0, focal_alpha=0.25, focal_gamma=2.0, decoder_sa_type='sa', matcher_type='HungarianMatcher', decoder_module_seq=['sa', 'ca', 'ffn'], nms_iou_threshold=-1, dec_pred_class_embed_share=True, match_unstable_error=True, use_ema=False, ema_decay=0.9997, ema_epoch=0, use_detached_boxes_dec_out=False, use_coco_eval=False, dn_scalar=100, label_list=['infrared small target'], use_hr_branch=False, hr_fusion_type='cat', freeze_swin=False)
+[0m
+[36mDEBUG   [0m [36m2026-03-04 16:28:12,431 | [34mbuild model ... ...[0m
+[36mDEBUG   [0m [36m2026-03-04 16:28:15,765 | [34mbuild model, done.[0m
+[32mINFO    [0m [32m2026-03-04 16:28:15,765 | [34mLoading pretrained model from /media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,325 | [34mLoRA target modules: ['qkv', 'proj', 'fc1', 'fc2', 'sampling_offsets', 'attention_weights', 'value_proj', 'output_proj', 'v_proj', 'l_proj', 'values_v_proj', 'values_l_proj', 'out_v_proj', 'out_l_proj', 'linear1', 'linear2'][0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,326 | [34mHF-LoRA modules: ['qkv', 'fc1', 'fc2'][0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,326 | [34mLayers to unfreeze: ['class_embed', 'bbox_embed', 'label_enc'][0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,434 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,436 | [34mLoRA Injection: 168 layers replaced[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,437 | [34m  Standard LoRA: 132 | HF-LoRA: 36[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,437 | [34m  r=16, alpha=32, scaling=2.0, dropout=0.05[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,437 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,438 | [34m  [   LoRA] transformer.encoder.layers.0.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,438 | [34m  [   LoRA] transformer.encoder.layers.0.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,438 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,439 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,439 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,439 | [34m  [   LoRA] transformer.encoder.layers.0.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,440 | [34m  [   LoRA] transformer.encoder.layers.1.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,440 | [34m  [   LoRA] transformer.encoder.layers.1.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,440 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,440 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,441 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,441 | [34m  [   LoRA] transformer.encoder.layers.1.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,441 | [34m  [   LoRA] transformer.encoder.layers.2.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,442 | [34m  [   LoRA] transformer.encoder.layers.2.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,442 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,442 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,442 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,443 | [34m  [   LoRA] transformer.encoder.layers.2.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,443 | [34m  [   LoRA] transformer.encoder.layers.3.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,443 | [34m  [   LoRA] transformer.encoder.layers.3.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,444 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,444 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,444 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,444 | [34m  [   LoRA] transformer.encoder.layers.3.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,445 | [34m  [   LoRA] transformer.encoder.layers.4.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,445 | [34m  [   LoRA] transformer.encoder.layers.4.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,445 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,446 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,446 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,446 | [34m  [   LoRA] transformer.encoder.layers.4.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,446 | [34m  [   LoRA] transformer.encoder.layers.5.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,447 | [34m  [   LoRA] transformer.encoder.layers.5.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,447 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.sampling_offsets[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,447 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.attention_weights[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,447 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.value_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,448 | [34m  [   LoRA] transformer.encoder.layers.5.self_attn.output_proj[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,448 | [34m  [   LoRA] transformer.encoder.text_layers.0.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,448 | [34m  [   LoRA] transformer.encoder.text_layers.0.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,449 | [34m  [   LoRA] transformer.encoder.text_layers.1.linear1[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,449 | [34m  [   LoRA] transformer.encoder.text_layers.1.linear2[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,449 | [34m  ... and 128 more[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,449 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,469 | [34mUnfroze 12 param tensors (265,224 params):[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,469 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.0.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,469 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.0.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,470 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.1.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,470 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.1.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,470 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.2.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,470 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.2.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,470 | [34m  ✓ transformer.enc_out_bbox_embed.layers.0.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,470 | [34m  ✓ transformer.enc_out_bbox_embed.layers.0.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,471 | [34m  ✓ transformer.enc_out_bbox_embed.layers.1.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,471 | [34m  ✓ transformer.enc_out_bbox_embed.layers.1.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,471 | [34m  ✓ transformer.enc_out_bbox_embed.layers.2.weight[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,471 | [34m  ✓ transformer.enc_out_bbox_embed.layers.2.bias[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,501 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,502 | [34mTrainable Parameter Summary:[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,502 | [34m  Total params:       176,208,322[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,502 | [34m  Trainable params:     3,633,864 (2.0623%)[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,503 | [34m    - LoRA (A+B):       3,366,912[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,503 | [34m    - HF-Conv:              1,728[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,503 | [34m    - Det. heads:         265,224[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,504 | [34m    - Other:                    0[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,504 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,643 | [34mnumber of params:3633864[0m
+[32mINFO    [0m [32m2026-03-04 16:28:16,652 | [34mOptimizing 384 LoRA parameter tensors[0m
+[36mDEBUG   [0m [36m2026-03-04 16:28:16,653 | [34mbuild dataset ... ...[0m
+[36mDEBUG   [0m [36m2026-03-04 16:28:16,655 | [34mbuild dataset, done.[0m
+[36mDEBUG   [0m [36m2026-03-04 16:28:16,655 | [34mnumber of training dataset: 1, samples: 256[0m

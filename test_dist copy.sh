@@ -1,31 +1,24 @@
 #!/bin/bash
 # ============================================================
-# train_lora.sh - 灵活的 LoRA / HF-LoRA 训练脚本
+# test_dist.sh - 灵活的 LoRA / HF-LoRA 测试评估脚本
 # ============================================================
 # 用法示例：
 #
-# 1. 标准 LoRA 训练：
-#    USE_LORA=true bash train_lora.sh 2 configs/cfg_odvg.py datasets/custom.json output/exp1
+# 1. 标准 LoRA 评估（已合并权重的模型）：
+#    USE_LORA=true bash test_dist.sh 2 configs/cfg_odvg.py datasets/test.json output/eval
 #
-# 2. HF-LoRA 训练（Backbone 层用高频增强）：
-#    USE_LORA=true USE_HF_LORA=true bash train_lora.sh 2 configs/cfg_odvg.py datasets/custom.json output/exp2
+# 2. HF-LoRA 评估（从检查点加载）：
+#    USE_LORA=true USE_HF_LORA=true \
+#    LORA_RESUME=output/hf_lora/lora_checkpoint_best \
+#    bash test_dist.sh 2 configs/cfg_odvg.py datasets/test.json output/eval
 #
-# 3. 自定义 HF-LoRA 目标层：
-#    USE_LORA=true USE_HF_LORA=true HF_LORA_MODULES="qkv proj fc1 fc2" bash train_lora.sh 2 ...
+# 3. 全量微调模型评估（不用 LoRA）：
+#    USE_LORA=false bash test_dist.sh 2 configs/cfg_odvg.py datasets/test.json output/eval
 #
-# 4. 全量微调（不使用 LoRA）：
-#    bash train_lora.sh 2 configs/cfg_odvg.py datasets/custom.json output/exp3
-#
-# 5. 从检查点恢复 HF-LoRA 训练：
-#    USE_LORA=true USE_HF_LORA=true LORA_RESUME=output/exp2/lora_checkpoint_best bash train_lora.sh 2 ...
-#
-# 6. 评估模式：
-#    USE_LORA=true USE_HF_LORA=true LORA_RESUME=output/exp2/lora_checkpoint_best EVAL_ONLY=true bash train_lora.sh 2 ...
-#
-# 7. 高 rank + 全部层 HF-LoRA（消融实验）：
-#    USE_LORA=true USE_HF_LORA=true LORA_R=16 LORA_ALPHA=32 \
-#    HF_LORA_MODULES="qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj" \
-#    bash train_lora.sh 2 ...
+# 4. 扩展评估（PR 曲线 + 可视化 + JSON）：
+#    USE_LORA=true USE_HF_LORA=true EXTENDED_EVAL=true \
+#    LORA_RESUME=output/hf_lora/lora_checkpoint_best \
+#    bash test_dist.sh 2 configs/cfg_odvg.py datasets/test.json output/eval
 # ============================================================
 
 export TOKENIZERS_PARALLELISM=false
@@ -39,98 +32,107 @@ DATASETS=$3
 OUTPUT_DIR=$4
 
 if [ -z "$GPU_NUM" ] || [ -z "$CFG" ] || [ -z "$DATASETS" ] || [ -z "$OUTPUT_DIR" ]; then
-    echo "Usage: bash train_lora.sh GPU_NUM CFG DATASETS OUTPUT_DIR"
+    echo "Usage: bash test_dist.sh GPU_NUM CFG DATASETS OUTPUT_DIR"
     echo ""
-    echo "Example:"
-    echo "  USE_LORA=true bash train_lora.sh 2 configs/cfg_odvg.py datasets/custom.json output/exp1"
-    echo "  USE_LORA=true USE_HF_LORA=true bash train_lora.sh 2 configs/cfg_odvg.py datasets/custom.json output/exp2"
+    echo "Examples:"
+    echo "  # 标准 LoRA 评估（已合并模型）"
+    echo "  USE_LORA=true bash test_dist.sh 2 configs/cfg_odvg.py datasets/test.json output/eval"
+    echo ""
+    echo "  # HF-LoRA 评估（从检查点加载）"
+    echo "  USE_LORA=true USE_HF_LORA=true LORA_RESUME=output/best bash test_dist.sh 2 ..."
+    echo ""
+    echo "  # 扩展评估（PR 曲线 + 可视化）"
+    echo "  EXTENDED_EVAL=true bash test_dist.sh 2 ..."
     exit 1
 fi
 
 # ========================
-# 分布式训练参数
+# 分布式参数
 # ========================
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
-PORT=${PORT:-29504}
+PORT=${PORT:-29501}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 
 # ========================
 # 模型路径
 # ========================
-PRETRAIN_MODEL_PATH=${PRETRAIN_MODEL_PATH:-"/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth"}
+PRETRAIN_MODEL_PATH=${PRETRAIN_MODEL_PATH:-"/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_1230_exp1/merged_model.pth"}
 TEXT_ENCODER_TYPE=${TEXT_ENCODER_TYPE:-"/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased"}
 
 # ========================
 # LoRA 基础参数
 # ========================
-USE_LORA=${USE_LORA:-"false"}
-LORA_R=${LORA_R:-16}
-LORA_ALPHA=${LORA_ALPHA:-32}
+USE_LORA=${USE_LORA:-"true"}
+LORA_R=${LORA_R:-8}
+LORA_ALPHA=${LORA_ALPHA:-16}
 LORA_DROPOUT=${LORA_DROPOUT:-0.05}
 LORA_BIAS=${LORA_BIAS:-"none"}
 LORA_RESUME=${LORA_RESUME:-""}
 MERGE_LORA=${MERGE_LORA:-"false"}
 
-# LoRA 目标层（所有要注入 LoRA 的层）
-# 默认覆盖 Backbone + Encoder/Decoder + Fusion + FFN
+# LoRA 目标层
 LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-"qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj v_proj l_proj values_v_proj values_l_proj out_v_proj out_l_proj linear1 linear2"}
 
-# 需要解冻的层（检测头等，不使用 LoRA 而是全量训练）
+# 需要解冻的层
 LORA_UNFREEZE_LAYERS=${LORA_UNFREEZE_LAYERS:-"class_embed bbox_embed label_enc"}
 
 # ========================
 # HF-LoRA 参数（创新点）
 # ========================
 USE_HF_LORA=${USE_HF_LORA:-"false"}
-
-# HF-LoRA 目标层（在这些层使用高频增强，其余层使用标准 LoRA）
-# 默认只在 Backbone 的核心层使用 HF-LoRA
 HF_LORA_MODULES=${HF_LORA_MODULES:-"qkv fc1 fc2"}
 
 # ========================
-# 训练控制参数
+# 扩展评估参数
 # ========================
-EVAL_ONLY=${EVAL_ONLY:-"false"}
-SAVE_BEST_ONLY=${SAVE_BEST_ONLY:-"true"}
-FIND_UNUSED_PARAMS=${FIND_UNUSED_PARAMS:-"true"}
-SAVE_LOG=${SAVE_LOG:-"false"}
-NUM_WORKERS=${NUM_WORKERS:-8}
+# 一键启用所有扩展功能
+EXTENDED_EVAL=${EXTENDED_EVAL:-"true"}
+
+# 或者单独控制每个功能
+SAVE_JSON=${SAVE_JSON:-"false"}        # 保存 COCO 格式 JSON 结果
+PLOT_CURVES=${PLOT_CURVES:-"false"}    # 绘制 PR/P/R/F1 曲线
+VISUALIZE=${VISUALIZE:-"false"}        # 可视化 GT vs 预测对比图
+SAVE_METRICS=${SAVE_METRICS:-"false"}  # 保存详细指标到文件
 
 # ========================
-# 可选：覆盖 config 中的超参数
+# 其他控制参数
 # ========================
-# 这些参数通过 --options 传给 config，留空则使用 config 文件中的默认值
-EPOCHS=${EPOCHS:-""}
-LR=${LR:-""}
-LR_DROP=${LR_DROP:-""}
-BATCH_SIZE=${BATCH_SIZE:-""}
-WEIGHT_DECAY=${WEIGHT_DECAY:-""}
+FIND_UNUSED_PARAMS=${FIND_UNUSED_PARAMS:-"true"}
+NUM_WORKERS=${NUM_WORKERS:-8}
 
 # ============================================================
 # 打印配置信息
 # ============================================================
 
-# 确定训练模式名称
+# 确定评估模式名称
 if [ "$USE_LORA" = "true" ]; then
     if [ "$USE_HF_LORA" = "true" ]; then
-        TRAIN_MODE="HF-LoRA (High-Frequency Enhanced LoRA)"
+        if [ -n "$LORA_RESUME" ]; then
+            EVAL_MODE="HF-LoRA (load from checkpoint)"
+        else
+            EVAL_MODE="HF-LoRA (inject + evaluate)"
+        fi
     else
-        TRAIN_MODE="Standard LoRA"
+        if [ -n "$LORA_RESUME" ]; then
+            EVAL_MODE="Standard LoRA (load from checkpoint)"
+        else
+            EVAL_MODE="Standard LoRA (inject + evaluate)"
+        fi
     fi
 else
-    TRAIN_MODE="Full Fine-tuning (No LoRA)"
+    EVAL_MODE="Full Model (No LoRA)"
 fi
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║              Training Configuration                      ║"
+echo "║              Evaluation Configuration                    ║"
 echo "╠══════════════════════════════════════════════════════════╣"
-echo "║  Mode: ${TRAIN_MODE}"
+echo "║  Mode: ${EVAL_MODE}"
 echo "╠══════════════════════════════════════════════════════════╣"
 echo "║  Basic:"
-echo "║    GPU_NUM          = $GPU_NUM"
-echo "║    CFG              = $CFG"
+echo "║    GPU_NUM           = $GPU_NUM"
+echo "║    CFG               = $CFG"
 echo "║    DATASETS          = $DATASETS"
 echo "║    OUTPUT_DIR        = $OUTPUT_DIR"
 echo "║    PRETRAIN_MODEL    = $(basename $PRETRAIN_MODEL_PATH)"
@@ -149,24 +151,19 @@ echo "║  HF-LoRA (Innovation):"
 echo "║    HF_LORA_MODULES   = $HF_LORA_MODULES"
 fi
 if [ -n "$LORA_RESUME" ]; then
-echo "║  Resume:"
+echo "║  Checkpoint:"
 echo "║    LORA_RESUME       = $LORA_RESUME"
 fi
+echo "║    MERGE_LORA        = $MERGE_LORA"
 echo "╠══════════════════════════════════════════════════════════╣"
 fi
-echo "║  Control:"
-echo "║    EVAL_ONLY         = $EVAL_ONLY"
-echo "║    SAVE_BEST_ONLY    = $SAVE_BEST_ONLY"
-echo "║    MERGE_LORA        = $MERGE_LORA"
-echo "║    FIND_UNUSED       = $FIND_UNUSED_PARAMS"
-if [ -n "$EPOCHS" ]; then
-echo "║    EPOCHS            = $EPOCHS"
-fi
-if [ -n "$LR" ]; then
-echo "║    LR                = $LR"
-fi
-if [ -n "$BATCH_SIZE" ]; then
-echo "║    BATCH_SIZE        = $BATCH_SIZE"
+echo "║  Extended Evaluation:"
+echo "║    EXTENDED_EVAL     = $EXTENDED_EVAL"
+if [ "$EXTENDED_EVAL" != "true" ]; then
+echo "║    SAVE_JSON         = $SAVE_JSON"
+echo "║    PLOT_CURVES       = $PLOT_CURVES"
+echo "║    VISUALIZE         = $VISUALIZE"
+echo "║    SAVE_METRICS      = $SAVE_METRICS"
 fi
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
@@ -185,31 +182,15 @@ if [ "$NNODES" -gt 1 ]; then
     CMD="$CMD --nnodes=${NNODES} --node_rank=${NODE_RANK} --master_addr=${MASTER_ADDR}"
 fi
 
-# main.py 基础参数
+# main.py 基础参数（注意 --eval 标志）
 CMD="$CMD main.py \
     --output_dir ${OUTPUT_DIR} \
+    --eval \
     -c ${CFG} \
     --datasets ${DATASETS} \
     --pretrain_model_path ${PRETRAIN_MODEL_PATH} \
     --num_workers ${NUM_WORKERS} \
     --options text_encoder_type=${TEXT_ENCODER_TYPE}"
-
-# ------ 可选超参数覆盖（通过 --options 传递）------
-if [ -n "$EPOCHS" ]; then
-    CMD="$CMD epochs=${EPOCHS}"
-fi
-if [ -n "$LR" ]; then
-    CMD="$CMD lr=${LR}"
-fi
-if [ -n "$LR_DROP" ]; then
-    CMD="$CMD lr_drop=${LR_DROP}"
-fi
-if [ -n "$BATCH_SIZE" ]; then
-    CMD="$CMD batch_size=${BATCH_SIZE}"
-fi
-if [ -n "$WEIGHT_DECAY" ]; then
-    CMD="$CMD weight_decay=${WEIGHT_DECAY}"
-fi
 
 # ------ LoRA 参数 ------
 if [ "$USE_LORA" = "true" ]; then
@@ -221,12 +202,12 @@ if [ "$USE_LORA" = "true" ]; then
     CMD="$CMD --lora_target_modules ${LORA_TARGET_MODULES}"
     CMD="$CMD --lora_unfreeze_layers ${LORA_UNFREEZE_LAYERS}"
 
-    # LoRA 恢复
+    # LoRA 检查点加载
     if [ -n "$LORA_RESUME" ]; then
         CMD="$CMD --lora_resume ${LORA_RESUME}"
     fi
 
-    # 训练后合并
+    # 合并 LoRA 权重用于推理加速
     if [ "$MERGE_LORA" = "true" ]; then
         CMD="$CMD --merge_lora_after_train"
     fi
@@ -237,21 +218,27 @@ if [ "$USE_LORA" = "true" ]; then
     fi
 fi
 
+# ------ 扩展评估参数 ------
+if [ "$EXTENDED_EVAL" = "true" ]; then
+    CMD="$CMD --extended_eval"
+else
+    if [ "$SAVE_JSON" = "true" ]; then
+        CMD="$CMD --save_json"
+    fi
+    if [ "$PLOT_CURVES" = "true" ]; then
+        CMD="$CMD --plot_curves"
+    fi
+    if [ "$VISUALIZE" = "true" ]; then
+        CMD="$CMD --visualize"
+    fi
+    if [ "$SAVE_METRICS" = "true" ]; then
+        CMD="$CMD --save_metrics"
+    fi
+fi
+
 # ------ 其他控制参数 ------
-if [ "$EVAL_ONLY" = "true" ]; then
-    CMD="$CMD --eval"
-fi
-
-if [ "$SAVE_BEST_ONLY" = "true" ]; then
-    CMD="$CMD --save_best_only"
-fi
-
 if [ "$FIND_UNUSED_PARAMS" = "true" ]; then
     CMD="$CMD --find_unused_params"
-fi
-
-if [ "$SAVE_LOG" = "true" ]; then
-    CMD="$CMD --save_log"
 fi
 
 # ============================================================
@@ -260,45 +247,52 @@ fi
 echo "Executing command:"
 echo "$CMD"
 echo ""
-echo "Log file: ${OUTPUT_DIR}/info.txt"
+echo "Output directory: ${OUTPUT_DIR}"
 echo "============================================================"
 echo ""
 
 eval $CMD
 
 # ============================================================
-# 训练完成后的提示
+# 评估完成后的提示
 # ============================================================
 EXIT_CODE=$?
 
 echo ""
 echo "============================================================"
 if [ $EXIT_CODE -eq 0 ]; then
-    echo "✓ Training completed successfully!"
-    echo "  Output: ${OUTPUT_DIR}"
-    if [ "$USE_LORA" = "true" ]; then
-        if [ -d "${OUTPUT_DIR}/lora_checkpoint_best" ]; then
-            echo "  Best checkpoint: ${OUTPUT_DIR}/lora_checkpoint_best/"
-            if [ -f "${OUTPUT_DIR}/lora_checkpoint_best/training_state.pth" ]; then
-                echo "  (contains: lora_weights.pth, training_state.pth, lora_config.json)"
-            fi
-        fi
+    echo "✓ Evaluation completed successfully!"
+    echo "  Output directory: ${OUTPUT_DIR}"
+    echo ""
+    echo "  Output files:"
+    # 列出输出目录中的文件
+    if [ -f "${OUTPUT_DIR}/eval.pth" ]; then
+        echo "    ✓ eval.pth (COCO evaluation results)"
+    fi
+    if [ -f "${OUTPUT_DIR}/log.txt" ]; then
+        echo "    ✓ log.txt (evaluation log)"
+    fi
+    if [ -d "${OUTPUT_DIR}/eval" ]; then
+        echo "    ✓ eval/ (detailed evaluation data)"
+    fi
+    if [ -f "${OUTPUT_DIR}/predictions.json" ]; then
+        echo "    ✓ predictions.json (COCO format predictions)"
+    fi
+    if [ -d "${OUTPUT_DIR}/curves" ]; then
+        echo "    ✓ curves/ (PR/P/R/F1 curves)"
+    fi
+    if [ -d "${OUTPUT_DIR}/visualize" ]; then
+        echo "    ✓ visualize/ (GT vs prediction comparison)"
+    fi
+    if [ -f "${OUTPUT_DIR}/metrics.json" ]; then
+        echo "    ✓ metrics.json (detailed metrics)"
     fi
 else
-    echo "✗ Training failed with exit code: $EXIT_CODE"
+    echo "✗ Evaluation failed with exit code: $EXIT_CODE"
     echo "  Check log: ${OUTPUT_DIR}/info.txt"
 fi
 echo "============================================================"
 
 exit $EXIT_CODE
 
-# USE_LORA=true CUDA_VISIBLE_DEVICES=0,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0304_exp2_S
-```
-USE_LORA=true \
-USE_HF_LORA=true \
-MERGE_LORA=true \
-CUDA_VISIBLE_DEVICES=2,3 \
-bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0304_exp2_S
-```
-# USE_LORA=true CUDA_VISIBLE_DEVICES=0,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0305_exp1ST_K
-# USE_LORA=true USE_HF_LORA=true CUDA_VISIBLE_DEVICES=1,0 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0305_exp1HF_K
+# bash test_dist.sh 2 ./config/cfg_odvg.py ./config/datasets_coco_test.json ./eval_output/0304_exp1/sirst

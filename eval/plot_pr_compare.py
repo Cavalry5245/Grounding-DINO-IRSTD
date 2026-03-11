@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 
 # 你只需要改这里：要对比的实验目录
 COMPARE_RUNS = [
-    {"name": "Only Image", "dir": "eval_output/0label/NUDT-SIRST"},
-    {"name": "Image+Text", "dir": "eval_output/lora_nwd/NUDT-SIRST"},
+    # {"name": "Only Image", "dir": "eval_output/0label/NUDT-SIRST"},
+    {"name": "Image+Text", "dir": "eval_output/0304_ST_exp1/SIRST"},
 ]
 
-SAVE_PATH = "eval_output/figs/pr_curve_compare_text_d.png"
-TITLE = "NUDT-SIRST PR Curve Comparison"
+SAVE_PATH = "eval_output/figs/pr_curve_SIRST_0305.png"
+TITLE = "SIRST PR Curve "
 
 
 def plot_pr_compare(runs, save_path, title="PR Curve Comparison"):

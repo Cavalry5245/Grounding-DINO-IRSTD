@@ -23,7 +23,18 @@ from engine import evaluate, train_one_epoch
 
 from groundingdino.util.utils import clean_state_dict
 
-from peft import LoraConfig, get_peft_model, PeftModel
+# ===== 手动 LoRA 实现（替代 peft 库）=====
+from manual_lora import (
+    inject_lora,
+    unfreeze_layers,
+    freeze_base_model,
+    print_trainable_summary,
+    save_lora_checkpoint,
+    load_lora_weights,
+    merge_lora_weights,
+)
+# ==========================================
+
 from tqdm import tqdm
 
 
@@ -85,7 +96,6 @@ def get_args_parser():
     parser.add_argument('--lora_target_modules', type=str, nargs='+',
                         default=[
                             # Image Backbone (Swin Transformer)
-                            "proj",
                             "qkv",
                             "proj",
                             "fc1",
@@ -111,12 +121,19 @@ def get_args_parser():
                         choices=['none', 'all', 'lora_only'],
                         help='Bias training strategy')
     parser.add_argument('--lora_resume', default='',
-                        help='Resume LoRA weights from peft checkpoint directory')
+                        help='Resume LoRA weights from checkpoint directory')
     parser.add_argument('--merge_lora_after_train', action='store_true',
                         help='Merge LoRA weights into base model after training')
     parser.add_argument('--lora_unfreeze_layers', type=str, nargs='+',
                         default=['class_embed', 'bbox_embed', 'label_enc'],
                         help='Layers to unfreeze (keep fully trainable)')
+
+    # HF-LoRA parameters (创新点：高频增强 LoRA)
+    parser.add_argument('--hf_lora_modules', type=str, nargs='+',
+                        default=[],
+                        help='Modules to use HF-LoRA instead of standard LoRA. '
+                             'Example: --hf_lora_modules qkv fc1 fc2 '
+                             'If empty, all modules use standard LoRA.')
 
     # Save options
     parser.add_argument('--save_best_only', action='store_true', default=True,
@@ -134,135 +151,51 @@ def build_model_main(args):
 
 
 def apply_lora(model, args, logger=None):
-    """Apply LoRA to the model and unfreeze specified layers."""
+    """Apply manual LoRA (and optionally HF-LoRA) to the model and unfreeze specified layers."""
     target_modules = args.lora_target_modules if args.lora_target_modules else [
         "sampling_offsets", "attention_weights", "value_proj", "output_proj",
     ]
 
-    layers_to_unfreeze = args.lora_unfreeze_layers if hasattr(args, 'lora_unfreeze_layers') and args.lora_unfreeze_layers else [
-        'class_embed', 'bbox_embed', 'label_enc',
-    ]
+    layers_to_unfreeze = (
+        args.lora_unfreeze_layers
+        if hasattr(args, 'lora_unfreeze_layers') and args.lora_unfreeze_layers
+        else ['class_embed', 'bbox_embed', 'label_enc']
+    )
+
+    # 获取 HF-LoRA 目标模块（如果启用）
+    hf_lora_modules = (
+        args.hf_lora_modules
+        if hasattr(args, 'hf_lora_modules') and args.hf_lora_modules
+        else []
+    )
 
     if logger:
         logger.info(f"LoRA target modules: {target_modules}")
+        logger.info(f"HF-LoRA modules: {hf_lora_modules if hf_lora_modules else 'None (all standard LoRA)'}")
         logger.info(f"Layers to unfreeze: {layers_to_unfreeze}")
 
-    # Validate target modules
-    available_linear = set()
-    for name, module in model.named_modules():
-        if isinstance(module, torch.nn.Linear):
-            available_linear.add(name.split('.')[-1])
-
-    valid_targets = [t for t in target_modules if t in available_linear]
-    if not valid_targets:
-        if logger:
-            logger.error(f"No valid target modules found!")
-            logger.info(f"Available linear modules: {sorted(available_linear)}")
-        raise ValueError(f"No valid target modules. Available: {available_linear}")
-
-    if logger and set(valid_targets) != set(target_modules):
-        missing = set(target_modules) - set(valid_targets)
-        logger.warning(f"Some target modules not found and will be skipped: {missing}")
-
-    # Create LoRA config
-    lora_config = LoraConfig(
+    # ===== 注入 LoRA（替代 peft 的 get_peft_model）=====
+    model = inject_lora(
+        model,
+        target_modules=target_modules,
         r=args.lora_r,
         lora_alpha=args.lora_alpha,
         lora_dropout=args.lora_dropout,
         bias=args.lora_bias,
-        target_modules=valid_targets,
-        init_lora_weights=True,
+        hf_lora_modules=hf_lora_modules,
+        logger=logger,
     )
 
-    if logger:
-        logger.info("=" * 50)
-        logger.info("LoRA Configuration:")
-        logger.info(f"  - rank (r): {args.lora_r}")
-        logger.info(f"  - alpha: {args.lora_alpha}")
-        logger.info(f"  - scaling: {args.lora_alpha / args.lora_r}")
-        logger.info(f"  - dropout: {args.lora_dropout}")
-        logger.info(f"  - bias: {args.lora_bias}")
-        logger.info(f"  - target_modules: {valid_targets}")
-        logger.info("=" * 50)
+    # 冻结所有基础参数，只保留 LoRA 参数可训练
+    freeze_base_model(model)
 
-    # Apply LoRA
-    model = get_peft_model(model, lora_config)
+    # 手动解冻指定层（检测头等）
+    unfreeze_layers(model, layers_to_unfreeze, logger=logger)
 
-    # Manually unfreeze specified layers
-    unfrozen_params = []
-    unfrozen_count = 0
-
-    for name, param in model.named_parameters():
-        if param.requires_grad:
-            continue
-
-        should_unfreeze = any(layer_name in name for layer_name in layers_to_unfreeze)
-        if should_unfreeze:
-            param.requires_grad = True
-            unfrozen_params.append(name)
-            unfrozen_count += param.numel()
-
-    if logger:
-        logger.info(f"Manually unfroze {len(unfrozen_params)} parameter tensors ({unfrozen_count:,} parameters):")
-        for name in unfrozen_params[:30]:
-            logger.info(f"  ✓ {name}")
-        if len(unfrozen_params) > 30:
-            logger.info(f"  ... and {len(unfrozen_params) - 30} more")
-
-    # Print final statistics
-    if logger:
-        total_params = sum(p.numel() for p in model.parameters())
-        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-        lora_params = sum(p.numel() for n, p in model.named_parameters() if p.requires_grad and 'lora_' in n)
-        head_params = sum(p.numel() for n, p in model.named_parameters()
-                         if p.requires_grad and any(h in n for h in ['class_embed', 'bbox_embed', 'label_enc']))
-        other_params = trainable_params - lora_params - head_params
-
-        logger.info("=" * 50)
-        logger.info("Trainable Parameter Summary:")
-        logger.info(f"  Total params:      {total_params:>12,}")
-        logger.info(f"  Trainable params:  {trainable_params:>12,} ({100*trainable_params/total_params:.4f}%)")
-        logger.info(f"    - LoRA:          {lora_params:>12,}")
-        logger.info(f"    - Det. heads:    {head_params:>12,}")
-        logger.info(f"    - Other:         {other_params:>12,}")
-        logger.info("=" * 50)
+    # 打印可训练参数统计
+    print_trainable_summary(model, logger=logger)
 
     return model
-
-
-def save_lora_model(model, output_dir, epoch=None, optimizer=None, lr_scheduler=None, args=None,
-                    map_score=None, ap50_score=None):
-    """Save LoRA model using peft's save method."""
-    save_dir = Path(output_dir)
-    checkpoint_dir = save_dir / f"lora_checkpoint_epoch{epoch:04d}" if epoch is not None else save_dir / "lora_checkpoint"
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save LoRA weights (peft format)
-    model.save_pretrained(checkpoint_dir)
-
-    # Save training state
-    training_state = {'epoch': epoch}
-    if optimizer is not None:
-        training_state['optimizer'] = optimizer.state_dict()
-    if lr_scheduler is not None:
-        training_state['lr_scheduler'] = lr_scheduler.state_dict()
-    if args is not None:
-        training_state['args'] = vars(args)
-    if map_score is not None:
-        training_state['mAP'] = map_score
-    if ap50_score is not None:
-        training_state['AP50'] = ap50_score
-
-    torch.save(training_state, checkpoint_dir / "training_state.pth")
-    return checkpoint_dir
-
-
-def load_lora_model(base_model, lora_path, logger=None):
-    """Load LoRA weights from peft checkpoint."""
-    if logger:
-        logger.info(f"Loading LoRA weights from {lora_path}")
-    return PeftModel.from_pretrained(base_model, lora_path)
 
 
 def main(args):
@@ -362,11 +295,15 @@ def main(args):
 
     # Apply LoRA if enabled
     if args.use_lora:
+        # 先注入 LoRA 结构
+        model = apply_lora(model, args, logger)
+        model.to(device)
+
+        # 如果需要从检查点恢复 LoRA 权重
         if args.lora_resume:
-            logger.info(f"Loading LoRA model from {args.lora_resume}")
-            model = load_lora_model(model, args.lora_resume, logger)
-        else:
-            model = apply_lora(model, args, logger)
+            logger.info(f"Loading LoRA weights from {args.lora_resume}")
+            model = load_lora_weights(model, args.lora_resume, logger=logger)
+            model.to(device)
 
     model_without_ddp = model
     if args.distributed:
@@ -481,9 +418,10 @@ def main(args):
     if args.eval:
         os.environ['EVAL_FLAG'] = 'TRUE'
 
+        # 合并 LoRA 权重用于推理加速（可选）
         if args.use_lora and args.merge_lora_after_train:
             logger.info("Merging LoRA weights for inference...")
-            model_without_ddp = model_without_ddp.merge_and_unload()
+            model_without_ddp = merge_lora_weights(model_without_ddp, logger=logger)
 
         test_stats, coco_evaluator = evaluate(
             model, criterion, postprocessors,
@@ -548,56 +486,67 @@ def main(args):
             save_best_only = getattr(args, 'save_best_only', False)
 
             if args.use_lora:
+                # ===== LoRA 检查点保存（手动实现）=====
                 if save_best_only:
                     if _isbest:
                         best_dir = output_dir / "lora_checkpoint_best"
-                        best_dir.mkdir(parents=True, exist_ok=True)
-                        model_without_ddp.save_pretrained(best_dir)
-                        torch.save({
-                            'epoch': epoch,
-                            'optimizer': optimizer.state_dict(),
-                            'lr_scheduler': lr_scheduler.state_dict(),
-                            'mAP': map_regular,
-                            'AP50': ap50,
-                            'args': vars(args),
-                        }, best_dir / "training_state.pth")
-                        logger.info(f"Saved best LoRA checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
-                else:
-                    save_lora_model(
-                        model_without_ddp, args.output_dir,
-                        epoch=None,
-                        optimizer=optimizer,
-                        lr_scheduler=lr_scheduler,
-                        args=args,
-                        map_score=map_regular,
-                        ap50_score=ap50
-                    )
-
-                    if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
-                        save_lora_model(
-                            model_without_ddp, args.output_dir,
+                        save_lora_checkpoint(
+                            model_without_ddp, best_dir,
                             epoch=epoch,
                             optimizer=optimizer,
                             lr_scheduler=lr_scheduler,
                             args=args,
                             map_score=map_regular,
-                            ap50_score=ap50
+                            ap50_score=ap50,
+                            logger=logger,
+                        )
+                        logger.info(f"Saved best LoRA checkpoint at epoch {epoch} "
+                                    f"with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                else:
+                    # 保存最新检查点（覆盖）
+                    latest_dir = output_dir / "lora_checkpoint"
+                    save_lora_checkpoint(
+                        model_without_ddp, latest_dir,
+                        epoch=epoch,
+                        optimizer=optimizer,
+                        lr_scheduler=lr_scheduler,
+                        args=args,
+                        map_score=map_regular,
+                        ap50_score=ap50,
+                        logger=logger,
+                    )
+
+                    # 按间隔保存带 epoch 编号的检查点
+                    if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
+                        epoch_dir = output_dir / f"lora_checkpoint_epoch{epoch:04d}"
+                        save_lora_checkpoint(
+                            model_without_ddp, epoch_dir,
+                            epoch=epoch,
+                            optimizer=optimizer,
+                            lr_scheduler=lr_scheduler,
+                            args=args,
+                            map_score=map_regular,
+                            ap50_score=ap50,
+                            logger=logger,
                         )
 
+                    # 保存最佳检查点
                     if _isbest:
                         best_dir = output_dir / "lora_checkpoint_best"
-                        best_dir.mkdir(parents=True, exist_ok=True)
-                        model_without_ddp.save_pretrained(best_dir)
-                        torch.save({
-                            'epoch': epoch,
-                            'optimizer': optimizer.state_dict(),
-                            'lr_scheduler': lr_scheduler.state_dict(),
-                            'mAP': map_regular,
-                            'AP50': ap50,
-                            'args': vars(args),
-                        }, best_dir / "training_state.pth")
-                        logger.info(f"Saved best LoRA checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                        save_lora_checkpoint(
+                            model_without_ddp, best_dir,
+                            epoch=epoch,
+                            optimizer=optimizer,
+                            lr_scheduler=lr_scheduler,
+                            args=args,
+                            map_score=map_regular,
+                            ap50_score=ap50,
+                            logger=logger,
+                        )
+                        logger.info(f"Saved best LoRA checkpoint at epoch {epoch} "
+                                    f"with mAP={map_regular:.4f}, AP50={ap50:.4f}")
             else:
+                # ===== 非 LoRA 检查点保存（保持不变）=====
                 if save_best_only:
                     if _isbest:
                         checkpoint_path = output_dir / 'checkpoint_best.pth'
@@ -610,7 +559,8 @@ def main(args):
                             'AP50': ap50,
                             'args': args,
                         }, checkpoint_path)
-                        logger.info(f"Saved best checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                        logger.info(f"Saved best checkpoint at epoch {epoch} "
+                                    f"with mAP={map_regular:.4f}, AP50={ap50:.4f}")
                 else:
                     checkpoint_paths = [output_dir / 'checkpoint.pth']
                     if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % args.save_checkpoint_interval == 0:
@@ -637,7 +587,8 @@ def main(args):
                             'AP50': ap50,
                             'args': args,
                         }, output_dir / 'checkpoint_best_regular.pth')
-                        logger.info(f"Saved best checkpoint at epoch {epoch} with mAP={map_regular:.4f}, AP50={ap50:.4f}")
+                        logger.info(f"Saved best checkpoint at epoch {epoch} "
+                                    f"with mAP={map_regular:.4f}, AP50={ap50:.4f}")
 
         log_stats = {
             **{f'train_{k}': v for k, v in train_stats.items()},
@@ -670,7 +621,7 @@ def main(args):
     # Merge LoRA weights after training (optional)
     if args.use_lora and args.merge_lora_after_train and utils.is_main_process():
         logger.info("Merging LoRA weights into base model...")
-        merged_model = model_without_ddp.merge_and_unload()
+        merged_model = merge_lora_weights(model_without_ddp, logger=logger)
         merged_path = output_dir / "merged_model.pth"
         torch.save({
             'model': merged_model.state_dict(),
@@ -683,7 +634,8 @@ def main(args):
     if utils.is_main_process():
         logger.info("=" * 50)
         logger.info("Training completed!")
-        logger.info(f"Best mAP: {best_map_holder.best_all.best_res:.4f} at epoch {best_map_holder.best_all.best_ep}")
+        logger.info(f"Best mAP: {best_map_holder.best_all.best_res:.4f} "
+                     f"at epoch {best_map_holder.best_all.best_ep}")
         logger.info("=" * 50)
 
     total_time = time.time() - start_time

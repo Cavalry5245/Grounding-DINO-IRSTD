@@ -1,3 +1,4 @@
+# gdino_eval_core.py
 from __future__ import annotations
 
 import json
@@ -115,7 +116,6 @@ class ImagePathResolver:
 
     @staticmethod
     def _normalize_coco_name(file_name: str) -> str:
-        # 统一分隔符、去掉前导 ./ 或 /
         s = file_name.replace("\\", "/")
         while s.startswith("./"):
             s = s[2:]
@@ -133,22 +133,17 @@ class ImagePathResolver:
         if p2.exists():
             return p2
 
-        # 从索引精确匹配相对路径
         if s in self._rel_map:
             return self._rel_map[s]
 
-        # basename 唯一匹配
         candidates = self._base_map.get(base, [])
         if len(candidates) == 1:
             return candidates[0]
 
-        # basename 不唯一：尝试“尾部路径匹配”
-        # 例如 COCO 给的是 subdir/a.jpg，但 images_dir 下真实是 images/subdir/a.jpg
         tail_matches = [c for c in candidates if c.as_posix().endswith(s)]
         if len(tail_matches) == 1:
             return tail_matches[0]
         if len(tail_matches) > 1:
-            # 仍然不唯一，返回第一个并提示
             print(f"[WARN] multiple matches for '{coco_file_name}', choose: {tail_matches[0]}")
             return tail_matches[0]
 
@@ -368,20 +363,18 @@ class YoloStyleEvaluator:
             mp = mr = map50 = map5095 = 0.0
 
         f1_mean = float(np.mean(f1))
-        # count-based PD/FA at IoU=0.5 and confidence >= best_thres
         selected = conf_cat >= best_thres
         num_selected = int(selected.sum())
 
-        n_images_eval = len(self.stats)  # 实际参与评估的图像数（不含 missing） 
-        tp05 = correct_cat[:, 0].astype(np.bool_)  # IoU=0.5 correctness
+        n_images_eval = len(self.stats)
+        tp05 = correct_cat[:, 0].astype(np.bool_)
         TP = int(tp05[selected].sum())
         FP = int(num_selected - TP)
 
         GT = int(target_cls_cat.shape[0])
         FN = int(max(GT - TP, 0))
 
-        PD = TP / (TP + FN) if (TP + FN) > 0 else 0.0  # == TP/GT when GT>0
-        # FA = FP / (TP + FP) if (TP + FP) > 0 else 0.0  # your definition
+        PD = TP / (TP + FN) if (TP + FN) > 0 else 0.0
         FA = FP / n_images_eval if n_images_eval > 0 else 0.0
 
         if self.save_pred_json:
@@ -391,6 +384,130 @@ class YoloStyleEvaluator:
         return {"P": mp, "R": mr, "F1": f1_mean, "mAP@0.5": map50, "mAP@0.5:0.95": map5095, 
                 "PD": float(PD), "FA": float(FA), "best_thres": float(best_thres), "TP": TP, "FP_box": FP, "FN": FN, "GT": GT,
                 "n_images_eval": int(n_images_eval),}
+
+
+# =========================================================================
+# LoRA-aware model loader
+# =========================================================================
+
+def load_model_with_optional_lora(cfg: Dict[str, Any], device: str = "cuda"):
+    """
+    根据 cfg 中的配置，加载模型。支持三种模式：
+
+    模式 A - 合并后的权重（use_lora=False）：
+        直接用 load_model() 加载，和原来一样。
+
+    模式 B - 标准 LoRA 未合并权重（use_lora=True, hf_lora_modules=[]）：
+        加载基础模型 → 注入标准 LoRA → 加载 LoRA 权重
+
+    模式 C - HF-LoRA 未合并权重（use_lora=True, hf_lora_modules=["qkv",...]）：
+        加载基础模型 → 注入 HF-LoRA → 加载 LoRA 权重
+    """
+    use_lora = cfg.get("use_lora", False)
+
+    if not use_lora:
+        # ====== 模式 A：合并后的权重，直接加载 ======
+        print(f"[Model] Loading merged model from {cfg['weights']}")
+        model = load_model(cfg["config"], cfg["weights"])
+        model.to(device)
+        model.eval()
+        return model
+
+    # ====== 模式 B/C：未合并的 LoRA 权重 ======
+    lora_checkpoint = cfg.get("lora_checkpoint", "")
+    if not lora_checkpoint:
+        raise ValueError(
+            "use_lora=True but 'lora_checkpoint' is not set in CFG!\n"
+            "Please set:\n"
+            '  "lora_checkpoint": "path/to/lora_checkpoint_best"'
+        )
+
+    lora_checkpoint_dir = Path(lora_checkpoint)
+    if not lora_checkpoint_dir.exists():
+        raise FileNotFoundError(f"LoRA checkpoint not found: {lora_checkpoint_dir}")
+
+    # --- 读取 LoRA 配置 ---
+    # 优先从 lora_config.json 读取（训练时自动保存的）
+    lora_config_path = lora_checkpoint_dir / "lora_config.json"
+    if lora_config_path.exists():
+        print(f"[LoRA] Loading config from {lora_config_path}")
+        with open(lora_config_path, 'r') as f:
+            saved_config = json.load(f)
+
+        lora_r = saved_config.get('r', cfg.get('lora_r', 8))
+        lora_alpha = saved_config.get('lora_alpha', cfg.get('lora_alpha', 16))
+        lora_dropout = saved_config.get('lora_dropout', cfg.get('lora_dropout', 0.05))
+        lora_bias = saved_config.get('lora_bias', cfg.get('lora_bias', 'none'))
+        target_modules = saved_config.get('target_modules', cfg.get('lora_target_modules', []))
+        hf_lora_modules = saved_config.get('hf_lora_modules', cfg.get('hf_lora_modules', []))
+    else:
+        print(f"[LoRA] lora_config.json not found, using CFG values")
+        lora_r = cfg.get('lora_r', 8)
+        lora_alpha = cfg.get('lora_alpha', 16)
+        lora_dropout = cfg.get('lora_dropout', 0.05)
+        lora_bias = cfg.get('lora_bias', 'none')
+        target_modules = cfg.get('lora_target_modules', [])
+        hf_lora_modules = cfg.get('hf_lora_modules', [])
+
+    lora_type = "HF-LoRA" if hf_lora_modules else "Standard LoRA"
+
+    print(f"[LoRA] Mode: {lora_type}")
+    print(f"[LoRA] r={lora_r}, alpha={lora_alpha}, scaling={lora_alpha/lora_r}")
+    print(f"[LoRA] Target modules: {target_modules}")
+    if hf_lora_modules:
+        print(f"[LoRA] HF-LoRA modules: {hf_lora_modules}")
+
+    # 1. 加载基础模型 + 预训练权重
+    print(f"[Model] Loading base model from {cfg['weights']}")
+    model = load_model(cfg["config"], cfg["weights"])
+
+    # 2. 注入 LoRA 结构
+    from manual_lora import inject_lora, load_lora_weights
+
+    print(f"[LoRA] Injecting {lora_type} layers...")
+    model = inject_lora(
+        model,
+        target_modules=target_modules,
+        r=lora_r,
+        lora_alpha=lora_alpha,
+        lora_dropout=lora_dropout,
+        bias=lora_bias,
+        hf_lora_modules=hf_lora_modules if hf_lora_modules else None,
+    )
+
+    # 3. 加载训练好的 LoRA 权重
+    print(f"[LoRA] Loading trained weights from {lora_checkpoint_dir}")
+    model = load_lora_weights(model, lora_checkpoint_dir)
+
+    # 4. 打印检查点训练信息
+    training_state_path = lora_checkpoint_dir / "training_state.pth"
+    if training_state_path.exists():
+        state = torch.load(training_state_path, map_location='cpu')
+        epoch = state.get('epoch', '?')
+        mAP = state.get('mAP', None)
+        AP50 = state.get('AP50', None)
+        info_parts = [f"epoch={epoch}"]
+        if mAP is not None:
+            info_parts.append(f"mAP={mAP:.4f}")
+        if AP50 is not None:
+            info_parts.append(f"AP50={AP50:.4f}")
+        print(f"[LoRA] Checkpoint info: {', '.join(info_parts)}")
+
+    # 5. 统计参数
+    from manual_lora import ManualLoRALinear, HighFreqLoRALinear
+    total_lora = sum(1 for _, m in model.named_modules() if isinstance(m, (ManualLoRALinear, HighFreqLoRALinear)))
+    total_hf = sum(1 for _, m in model.named_modules() if isinstance(m, HighFreqLoRALinear))
+    total_std = total_lora - total_hf
+    lora_params = sum(
+        p.numel() for n, p in model.named_parameters()
+        if any(k in n for k in ['lora_A', 'lora_B', 'hf_conv'])
+    )
+    print(f"[LoRA] Injected layers: {total_lora} (Standard: {total_std}, HF-LoRA: {total_hf})")
+    print(f"[LoRA] LoRA parameters: {lora_params:,}")
+
+    model.to(device)
+    model.eval()
+    return model
 
 
 # -------------------------
@@ -407,6 +524,16 @@ def evaluate_gdino_on_coco(cfg: Dict[str, Any]) -> Dict[str, float]:
       - v5_metric
       - output_dir, save_pred_json
       - force_single_class (optional)
+
+      LoRA-specific keys (optional):
+      - use_lora: bool              是否使用 LoRA（默认 False）
+      - lora_checkpoint: str        LoRA 检查点目录路径
+      - lora_r: int                 LoRA rank（默认 8）
+      - lora_alpha: int             LoRA alpha（默认 16）
+      - lora_dropout: float         LoRA dropout（默认 0.05）
+      - lora_bias: str              LoRA bias（默认 'none'）
+      - lora_target_modules: list   LoRA 目标模块
+      - hf_lora_modules: list       HF-LoRA 目标模块（空列表=标准LoRA）
     """
     images_dir = Path(cfg["images_dir"])
     coco_gt = cfg["coco_gt"]
@@ -416,14 +543,15 @@ def evaluate_gdino_on_coco(cfg: Dict[str, Any]) -> Dict[str, float]:
     gt_loader = CocoGTLoader(coco_gt, force_single_class=force_single_class)
     items = gt_loader.iter_images()
 
-    # pred json 的 category_id：如果 GT 是单类且 category_id=0，就会是 0；否则取第一个 cat_id
     coco_pred_cat_id = gt_loader.cat_ids[0] if gt_loader.cat_ids else 0
 
     resolver = ImagePathResolver(images_dir, build_index=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = load_model(cfg["config"], cfg["weights"])
-    model.to(device)
+
+    # ===== 核心修改：使用 LoRA-aware 模型加载 =====
+    model = load_model_with_optional_lora(cfg, device=device)
+    # ===============================================
 
     evaluator = YoloStyleEvaluator(
         v5_metric=bool(cfg.get("v5_metric", False)),
@@ -468,7 +596,6 @@ def evaluate_gdino_on_coco(cfg: Dict[str, Any]) -> Dict[str, float]:
         pred_boxes_xyxy = pred_boxes_xyxy[keep]
         pred_scores = scores[keep]
 
-        # 你的任务是单类检测（prompt = 一个类），所以 pred_cls 全 0
         pred_cls = torch.zeros((pred_boxes_xyxy.shape[0],), dtype=torch.float32)
 
         gt_boxes = torch.from_numpy(it.boxes_xyxy).float()
