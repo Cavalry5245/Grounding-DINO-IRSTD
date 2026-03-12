@@ -300,5 +300,5 @@ MERGE_LORA=true \
 CUDA_VISIBLE_DEVICES=2,3 \
 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0304_exp2_S
 ```
-# USE_LORA=true CUDA_VISIBLE_DEVICES=0,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0305_exp1ST_K
+# USE_LORA=true CUDA_VISIBLE_DEVICES=3,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0312_exp1Va_S
 # USE_LORA=true USE_HF_LORA=true CUDA_VISIBLE_DEVICES=1,0 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0305_exp1HF_K

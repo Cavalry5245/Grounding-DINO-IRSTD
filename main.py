@@ -93,30 +93,47 @@ def get_args_parser():
                         help='LoRA alpha scaling factor')
     parser.add_argument('--lora_dropout', default=0.05, type=float,
                         help='LoRA dropout rate')
+    # parser.add_argument('--lora_target_modules', type=str, nargs='+',
+    #                     default=[
+    #                         # Image Backbone (Swin Transformer)
+    #                         "qkv",
+    #                         "proj",
+    #                         "fc1",
+    #                         "fc2",
+    #                         # Transformer Encoder & Decoder (Deformable DETR)
+    #                         "sampling_offsets",
+    #                         "attention_weights",
+    #                         "value_proj",
+    #                         "output_proj",
+    #                         # Fusion Layers (Bi-Directional Attention)
+    #                         "v_proj",
+    #                         "l_proj",
+    #                         "values_v_proj",
+    #                         "values_l_proj",
+    #                         "out_v_proj",
+    #                         "out_l_proj",
+    #                         # FFN (Feed Forward Networks in Transformer)
+    #                         "linear1",
+    #                         "linear2",
+    #                     ],
+    #                     help='Target modules to apply LoRA')
     parser.add_argument('--lora_target_modules', type=str, nargs='+',
                         default=[
-                            # Image Backbone (Swin Transformer)
-                            "qkv",
-                            "proj",
-                            "fc1",
-                            "fc2",
-                            # Transformer Encoder & Decoder (Deformable DETR)
-                            "sampling_offsets",
-                            "attention_weights",
-                            "value_proj",
-                            "output_proj",
-                            # Fusion Layers (Bi-Directional Attention)
-                            "v_proj",
-                            "l_proj",
-                            "values_v_proj",
-                            "values_l_proj",
-                            "out_v_proj",
-                            "out_l_proj",
-                            # FFN (Feed Forward Networks in Transformer)
-                            "linear1",
-                            "linear2",
+                        # 仅仅只微调注意力机制中的 QKV 和 Value 映射
+                        
+                        # 1. Swin Backbone 里的注意力层
+                        "qkv",           
+                        
+                        # 2. Text Encoder (BERT) 里的注意力层 (普通人一定会加这个)
+                        "query",
+                        "value",
+                        
+                        # 3. Fusion & Decoder 里的 Value 映射层
+                        "v_proj",
+                        "values_v_proj",
+                        "value_proj"
                         ],
-                        help='Target modules to apply LoRA')
+                        help='Target modules to apply LoRA, Vanilla LoRA')
     parser.add_argument('--lora_bias', type=str, default='none',
                         choices=['none', 'all', 'lora_only'],
                         help='Bias training strategy')
