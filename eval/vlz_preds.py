@@ -15,8 +15,8 @@ CFG = {
     "coco_gt": "data/NUDT-SIRST/annotations/test.json",
 
     # 评估输出目录（用于读取 metrics.json 的 best_thres）
-    "eval_output_dir": "eval_output/0label/NUDT-SIRST",
-    "pred_json": "eval_output/0label/NUDT-SIRST/predictions_coco_list.json",
+    "eval_output_dir": "eval_output/test/NUDT-SIRST2",
+    "pred_json": "eval_output/test/NUDT-SIRST2/predictions_coco_list.json",
 
     # 阈值：用 "best" 则自动读取 metrics.json 里的 best_thres；或写成浮点数例如 0.3
     "conf": "best",
@@ -25,7 +25,7 @@ CFG = {
     "iou_thres": 0.5,
 
     # 输出目录
-    "save_dir": "eval_output/0label/NUDT-SIRST/viz",
+    "save_dir": "eval_output/test/NUDT-SIRST2/viz",
 
     # 可视化数量控制
     "max_images": 200,          # 最多保存多少张（None 表示全部）

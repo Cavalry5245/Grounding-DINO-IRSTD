@@ -52,7 +52,7 @@ fi
 # ========================
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
-PORT=${PORT:-29504}
+PORT=${PORT:-29503}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 
 # ========================
@@ -74,7 +74,8 @@ MERGE_LORA=${MERGE_LORA:-"false"}
 
 # LoRA 目标层（所有要注入 LoRA 的层）
 # 默认覆盖 Backbone + Encoder/Decoder + Fusion + FFN
-LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-"qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj v_proj l_proj values_v_proj values_l_proj out_v_proj out_l_proj linear1 linear2"}
+# LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-"qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj v_proj l_proj values_v_proj values_l_proj out_v_proj out_l_proj linear1 linear2"}
+LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-"qkv query value v_proj values_v_proj values_proj"}
 
 # 需要解冻的层（检测头等，不使用 LoRA 而是全量训练）
 LORA_UNFREEZE_LAYERS=${LORA_UNFREEZE_LAYERS:-"class_embed bbox_embed label_enc"}
@@ -293,12 +294,12 @@ echo "============================================================"
 exit $EXIT_CODE
 
 # USE_LORA=true CUDA_VISIBLE_DEVICES=0,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0304_exp2_S
-```
-USE_LORA=true \
-USE_HF_LORA=true \
-MERGE_LORA=true \
-CUDA_VISIBLE_DEVICES=2,3 \
-bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0304_exp2_S
-```
-# USE_LORA=true CUDA_VISIBLE_DEVICES=3,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0312_exp1Va_S
-# USE_LORA=true USE_HF_LORA=true CUDA_VISIBLE_DEVICES=1,0 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0305_exp1HF_K
+# ```
+# # USE_LORA=true \
+# # USE_HF_LORA=true \
+# # MERGE_LORA=true \
+# # CUDA_VISIBLE_DEVICES=2,3 \
+# # bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0304_exp2_S
+# ```
+# USE_LORA=true CUDA_VISIBLE_DEVICES=3,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/no_lora_exp1_D
+# USE_LORA=true USE_HF_LORA=true CUDA_VISIBLE_DEVICES=2,3 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0312_exp1VA-HF_D

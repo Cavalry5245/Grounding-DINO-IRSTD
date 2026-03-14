@@ -31,13 +31,13 @@ CFG = {
     # --- 选择你要用的模式，注释掉另一个 ---
 
     # # 模式 A：合并后的权重
-    # "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_0206_exp1_D/merged_model.pth",
-    # "use_lora": False,
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output/no_lora_exp1_D/checkpoint_best.pth",
+    "use_lora": False,
 
     # 模式 B：未合并的 LoRA 权重
-    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth",
-    "use_lora": True,
-    "lora_checkpoint": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_0305_exp1HF_K/lora_checkpoint_best",
+    # "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth",
+    # "use_lora": True,
+    # "lora_checkpoint": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_0312_exp1VA-HF_D/lora_checkpoint_best",
 
     # ==================== LoRA 配置 ====================
     # 如果 lora_checkpoint 目录中有 lora_config.json，以下参数会被自动覆盖
@@ -46,20 +46,20 @@ CFG = {
     "lora_alpha": 32,
     "lora_dropout": 0.05,
     "lora_bias": "none",
-    "lora_target_modules": [
-        "qkv", "proj", "fc1", "fc2",
-        "sampling_offsets", "attention_weights",
-        "value_proj", "output_proj",
-        "v_proj", "l_proj",
-        "values_v_proj", "values_l_proj",
-        "out_v_proj", "out_l_proj",
-        "linear1", "linear2",
-    ],
+    # "lora_target_modules": [
+    #     "qkv", "proj", "fc1", "fc2",
+    #     "sampling_offsets", "attention_weights",
+    #     "value_proj", "output_proj",
+    #     "v_proj", "l_proj",
+    #     "values_v_proj", "values_l_proj",
+    #     "out_v_proj", "out_l_proj",
+    #     "linear1", "linear2"
+    # ],
 
     # HF-LoRA 配置（如果训练时用了 HF-LoRA，这里也要开启）
     # 设为空列表 [] 表示全部使用标准 LoRA
-    "hf_lora_modules": ["qkv", "fc1", "fc2"],
-    # "hf_lora_modules": [],  # 标准 LoRA 时用这行
+    # "hf_lora_modules": ["qkv", "fc1", "fc2"],
+    "hf_lora_modules": [],  # 标准 LoRA 时用这行
 
     # ==================== thresholds ====================
     "box_threshold": 0.001,
@@ -75,7 +75,7 @@ CFG = {
     "force_single_class": False,
 
     # ==================== output ====================
-    "output_dir": "eval_output/0305_HF_exp1/IRSTD-1k",
+    "output_dir": "eval_output/test/IRSTD-1k2",
     "save_pred_json": True,
     "save_pr_curve_data": True,
 }

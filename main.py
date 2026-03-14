@@ -80,60 +80,42 @@ def get_args_parser():
     parser.add_argument('--rank', default=0, type=int,
                         help='number of distributed processes')
     parser.add_argument("--local_rank", type=int, help='local rank for DistributedDataParallel')
-    parser.add_argument("--local-rank", type=int, help='local rank for DistributedDataParallel')
     parser.add_argument('--amp', action='store_true',
                         help="Train with mixed precision")
 
     # LoRA parameters
     parser.add_argument('--use_lora', action='store_true',
                         help='Enable LoRA fine-tuning')
-    parser.add_argument('--lora_r', default=8, type=int,
+    parser.add_argument('--lora_r', default=16, type=int,
                         help='LoRA rank')
-    parser.add_argument('--lora_alpha', default=16, type=int,
+    parser.add_argument('--lora_alpha', default=32, type=int,
                         help='LoRA alpha scaling factor')
     parser.add_argument('--lora_dropout', default=0.05, type=float,
                         help='LoRA dropout rate')
-    # parser.add_argument('--lora_target_modules', type=str, nargs='+',
-    #                     default=[
-    #                         # Image Backbone (Swin Transformer)
-    #                         "qkv",
-    #                         "proj",
-    #                         "fc1",
-    #                         "fc2",
-    #                         # Transformer Encoder & Decoder (Deformable DETR)
-    #                         "sampling_offsets",
-    #                         "attention_weights",
-    #                         "value_proj",
-    #                         "output_proj",
-    #                         # Fusion Layers (Bi-Directional Attention)
-    #                         "v_proj",
-    #                         "l_proj",
-    #                         "values_v_proj",
-    #                         "values_l_proj",
-    #                         "out_v_proj",
-    #                         "out_l_proj",
-    #                         # FFN (Feed Forward Networks in Transformer)
-    #                         "linear1",
-    #                         "linear2",
-    #                     ],
-    #                     help='Target modules to apply LoRA')
     parser.add_argument('--lora_target_modules', type=str, nargs='+',
                         default=[
-                        # 仅仅只微调注意力机制中的 QKV 和 Value 映射
-                        
-                        # 1. Swin Backbone 里的注意力层
-                        "qkv",           
-                        
-                        # 2. Text Encoder (BERT) 里的注意力层 (普通人一定会加这个)
-                        "query",
-                        "value",
-                        
-                        # 3. Fusion & Decoder 里的 Value 映射层
-                        "v_proj",
-                        "values_v_proj",
-                        "value_proj"
+                            # Image Backbone (Swin Transformer)
+                            "qkv",
+                            "proj",
+                            "fc1",
+                            "fc2",
+                            # Transformer Encoder & Decoder (Deformable DETR)
+                            "sampling_offsets",
+                            "attention_weights",
+                            "value_proj",
+                            "output_proj",
+                            # Fusion Layers (Bi-Directional Attention)
+                            "v_proj",
+                            "l_proj",
+                            "values_v_proj",
+                            "values_l_proj",
+                            "out_v_proj",
+                            "out_l_proj",
+                            # FFN (Feed Forward Networks in Transformer)
+                            "linear1",
+                            "linear2",
                         ],
-                        help='Target modules to apply LoRA, Vanilla LoRA')
+                        help='Target modules to apply LoRA')
     parser.add_argument('--lora_bias', type=str, default='none',
                         choices=['none', 'all', 'lora_only'],
                         help='Bias training strategy')

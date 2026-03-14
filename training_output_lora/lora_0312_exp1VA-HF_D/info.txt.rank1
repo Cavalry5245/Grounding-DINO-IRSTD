@@ -1,0 +1,90 @@
+[32mINFO    [0m [32m2026-03-12 15:26:48,379 | [34mgit:
+  sha: 830cc745914f5f649d94de5d2ae6900c2f004933, status: has uncommited changes, branch: main
+[0m
+[32mINFO    [0m [32m2026-03-12 15:26:48,379 | [34mCommand: main.py --output_dir ./training_output_lora/lora_0312_exp1VA-HF_D -c ./config/cfg_odvg.py --datasets ./config/datasets_mixed_odvg.json --pretrain_model_path /media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth --num_workers 8 --options text_encoder_type=/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased --use_lora --lora_r 16 --lora_alpha 32 --lora_dropout 0.05 --lora_bias none --lora_target_modules qkv query value v_proj values_v_proj values_proj --lora_unfreeze_layers class_embed bbox_embed label_enc --hf_lora_modules qkv fc1 fc2 --save_best_only --find_unused_params[0m
+[32mINFO    [0m [32m2026-03-12 15:26:48,380 | [34mworld size: 2[0m
+[32mINFO    [0m [32m2026-03-12 15:26:48,380 | [34mrank: 1[0m
+[32mINFO    [0m [32m2026-03-12 15:26:48,380 | [34mlocal_rank: 1[0m
+[32mINFO    [0m [32m2026-03-12 15:26:48,380 | [34margs: Namespace(config_file='./config/cfg_odvg.py', options={'text_encoder_type': '/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased'}, datasets='./config/datasets_mixed_odvg.json', remove_difficult=False, fix_size=False, output_dir='./training_output_lora/lora_0312_exp1VA-HF_D', note='', device='cuda', seed=42, resume='', pretrain_model_path='/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth', finetune_ignore=None, start_epoch=0, eval=False, num_workers=8, test=False, debug=False, find_unused_params=True, save_results=False, save_log=False, world_size=2, dist_url='env://', rank=1, local_rank=1, amp=False, use_lora=True, lora_r=16, lora_alpha=32, lora_dropout=0.05, lora_target_modules=['qkv', 'query', 'value', 'v_proj', 'values_v_proj', 'values_proj'], lora_bias='none', lora_resume='', merge_lora_after_train=False, lora_unfreeze_layers=['class_embed', 'bbox_embed', 'label_enc'], hf_lora_modules=['qkv', 'fc1', 'fc2'], save_best_only=True, gpu=1, distributed=True, dist_backend='nccl', data_aug_scales=[480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800], data_aug_max_size=1333, data_aug_scales2_resize=[400, 500, 600], data_aug_scales2_crop=[384, 600], data_aug_scale_overlap=None, batch_size=8, modelname='groundingdino', backbone='swin_T_224_1k', position_embedding='sine', pe_temperatureH=20, pe_temperatureW=20, return_interm_indices=[1, 2, 3], enc_layers=6, dec_layers=6, pre_norm=False, dim_feedforward=2048, hidden_dim=256, dropout=0.0, nheads=8, num_queries=900, query_dim=4, num_patterns=0, num_feature_levels=4, enc_n_points=4, dec_n_points=4, two_stage_type='standard', two_stage_bbox_embed_share=False, two_stage_class_embed_share=False, transformer_activation='relu', dec_pred_bbox_embed_share=True, dn_box_noise_scale=1.0, dn_label_noise_ratio=0.5, dn_label_coef=1.0, dn_bbox_coef=1.0, embed_init_tgt=True, dn_labelbook_size=2, max_text_len=256, text_encoder_type='/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased', use_text_enhancer=True, use_fusion_layer=True, use_checkpoint=True, use_transformer_ckpt=True, use_text_cross_attention=True, text_dropout=0.0, fusion_dropout=0.0, fusion_droppath=0.1, sub_sentence_present=True, max_labels=50, lr=0.0001, backbone_freeze_keywords=None, freeze_keywords=['bert'], lr_backbone=1e-05, lr_backbone_names=['backbone.0', 'bert'], lr_linear_proj_mult=1e-05, lr_linear_proj_names=['ref_point_head', 'sampling_offsets'], weight_decay=0.0001, param_dict_type='ddetr_in_mmdet', lr_hr_fusion=0.0001, lr_other=1e-05, ddetr_lr_param=False, epochs=20, lr_drop=10, save_checkpoint_interval=1, clip_max_norm=0.1, onecyclelr=False, multi_step_lr=False, lr_drop_list=[4, 8], frozen_weights=None, dilation=False, pdetr3_bbox_embed_diff_each_layer=False, pdetr3_refHW=-1, random_refpoints_xy=False, fix_refpoints_hw=-1, dabdetr_yolo_like_anchor_update=False, dabdetr_deformable_encoder=False, dabdetr_deformable_decoder=False, use_deformable_box_attn=False, box_attn_type='roi_align', dec_layer_number=None, decoder_layer_noise=False, dln_xy_noise=0.2, dln_hw_noise=0.2, add_channel_attention=False, add_pos_value=False, two_stage_pat_embed=0, two_stage_add_query_num=0, two_stage_learn_wh=False, two_stage_default_hw=0.05, two_stage_keep_all_tokens=False, num_select=300, batch_norm_type='FrozenBatchNorm2d', masks=False, aux_loss=True, set_cost_class=1.0, set_cost_bbox=5.0, set_cost_giou=2.0, cls_loss_coef=2.0, bbox_loss_coef=5.0, giou_loss_coef=0.0, nwd_loss_coef=10.0, enc_loss_coef=1.0, interm_loss_coef=1.0, no_interm_box_loss=False, mask_loss_coef=1.0, dice_loss_coef=1.0, focal_alpha=0.25, focal_gamma=2.0, decoder_sa_type='sa', matcher_type='HungarianMatcher', decoder_module_seq=['sa', 'ca', 'ffn'], nms_iou_threshold=-1, dec_pred_class_embed_share=True, match_unstable_error=True, use_ema=False, ema_decay=0.9997, ema_epoch=0, use_detached_boxes_dec_out=False, use_coco_eval=False, dn_scalar=100, label_list=['infrared small target'], use_hr_branch=False, hr_fusion_type='cat', freeze_swin=False)
+[0m
+[36mDEBUG   [0m [36m2026-03-12 15:26:48,381 | [34mbuild model ... ...[0m
+[36mDEBUG   [0m [36m2026-03-12 15:26:50,703 | [34mbuild model, done.[0m
+[32mINFO    [0m [32m2026-03-12 15:26:50,703 | [34mLoading pretrained model from /media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,151 | [34mLoRA target modules: ['qkv', 'query', 'value', 'v_proj', 'values_v_proj', 'values_proj'][0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,151 | [34mHF-LoRA modules: ['qkv', 'fc1', 'fc2'][0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,151 | [34mLayers to unfreeze: ['class_embed', 'bbox_embed', 'label_enc'][0m
+[33mWARNING [0m [33m2026-03-12 15:26:51,153 | [34mSkipped (not found): ['values_proj'][0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,181 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,181 | [34mLoRA Injection: 48 layers replaced[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,181 | [34m  Standard LoRA: 36 | HF-LoRA: 12[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m  r=16, alpha=32, scaling=2.0, dropout=0.05[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m  [   LoRA] transformer.encoder.fusion_layers.0.attn.v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m  [   LoRA] transformer.encoder.fusion_layers.0.attn.values_v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m  [   LoRA] transformer.encoder.fusion_layers.1.attn.v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m  [   LoRA] transformer.encoder.fusion_layers.1.attn.values_v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m  [   LoRA] transformer.encoder.fusion_layers.2.attn.v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m  [   LoRA] transformer.encoder.fusion_layers.2.attn.values_v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,182 | [34m  [   LoRA] transformer.encoder.fusion_layers.3.attn.v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] transformer.encoder.fusion_layers.3.attn.values_v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] transformer.encoder.fusion_layers.4.attn.v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] transformer.encoder.fusion_layers.4.attn.values_v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] transformer.encoder.fusion_layers.5.attn.v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] transformer.encoder.fusion_layers.5.attn.values_v_proj[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] bert.encoder.layer.0.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] bert.encoder.layer.0.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] bert.encoder.layer.1.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] bert.encoder.layer.1.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,183 | [34m  [   LoRA] bert.encoder.layer.2.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.2.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.3.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.3.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.4.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.4.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.5.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.5.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.6.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.6.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.7.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,184 | [34m  [   LoRA] bert.encoder.layer.7.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [   LoRA] bert.encoder.layer.8.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [   LoRA] bert.encoder.layer.8.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [   LoRA] bert.encoder.layer.9.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [   LoRA] bert.encoder.layer.9.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [   LoRA] bert.encoder.layer.10.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [   LoRA] bert.encoder.layer.10.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [   LoRA] bert.encoder.layer.11.attention.self.query[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [   LoRA] bert.encoder.layer.11.attention.self.value[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [HF-LoRA] backbone.0.layers.0.blocks.0.attn.qkv[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,185 | [34m  [HF-LoRA] backbone.0.layers.0.blocks.1.attn.qkv[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,186 | [34m  [HF-LoRA] backbone.0.layers.1.blocks.0.attn.qkv[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,186 | [34m  [HF-LoRA] backbone.0.layers.1.blocks.1.attn.qkv[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,186 | [34m  ... and 8 more[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,186 | [34m============================================================[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,195 | [34mUnfroze 12 param tensors (265,224 params):[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,195 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.0.weight[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.0.bias[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.1.weight[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.1.bias[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.2.weight[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.decoder.bbox_embed.0.layers.2.bias[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.enc_out_bbox_embed.layers.0.weight[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.enc_out_bbox_embed.layers.0.bias[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.enc_out_bbox_embed.layers.1.weight[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.enc_out_bbox_embed.layers.1.bias[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.enc_out_bbox_embed.layers.2.weight[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,196 | [34m  ✓ transformer.enc_out_bbox_embed.layers.2.bias[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,210 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,210 | [34mTrainable Parameter Summary:[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,210 | [34m  Total params:       173,958,466[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,210 | [34m  Trainable params:     1,384,008 (0.7956%)[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,210 | [34m    - LoRA (A+B):       1,118,208[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,210 | [34m    - HF-Conv:                576[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,211 | [34m    - Det. heads:         265,224[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,211 | [34m    - Other:                    0[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,211 | [34m==================================================[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,348 | [34mnumber of params:1384008[0m
+[32mINFO    [0m [32m2026-03-12 15:26:51,351 | [34mOptimizing 120 LoRA parameter tensors[0m
+[36mDEBUG   [0m [36m2026-03-12 15:26:51,351 | [34mbuild dataset ... ...[0m
+[36mDEBUG   [0m [36m2026-03-12 15:26:51,357 | [34mbuild dataset, done.[0m
+[36mDEBUG   [0m [36m2026-03-12 15:26:51,357 | [34mnumber of training dataset: 1, samples: 796[0m
