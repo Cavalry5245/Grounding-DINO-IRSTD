@@ -212,3 +212,4 @@ __pycache__/
 
 .claude/
 .vscode/
+*.json

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# train_lora.sh - 灵活的 LoRA / HF-LoRA 训练脚本
+# train_lora.sh - 灵活的 LoRA / HF-LoRA / 多粒度提示库训练脚本
 # ============================================================
 # 用法示例：
 #
@@ -26,6 +26,30 @@
 #    USE_LORA=true USE_HF_LORA=true LORA_R=16 LORA_ALPHA=32 \
 #    HF_LORA_MODULES="qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj" \
 #    bash train_lora.sh 2 ...
+#
+# === 多粒度提示库创新点 (Innovation #2) ===
+#
+# 8. 使用默认提示库 (generic + appearance + physical):
+#    USE_LORA=true USE_PROMPT_BANK=true bash train_lora.sh 2 configs/cfg_odvg.py datasets/IRSTD.json output/exp_prompt
+#
+# 9. 使用全部 5 个类别的提示:
+#    USE_LORA=true USE_PROMPT_BANK=true \
+#    PROMPT_CATEGORIES="generic appearance physical contextual size_aware" \
+#    NUM_SAMPLE_PROMPTS=5 \
+#    bash train_lora.sh 2 configs/cfg_odvg.py datasets/IRSTD.json output/exp_prompt_full
+#
+# 10. 仅使用通用 + 外观描述 (消融实验):
+#     USE_LORA=true USE_PROMPT_BANK=true \
+#     PROMPT_CATEGORIES="generic appearance" \
+#     NUM_SAMPLE_PROMPTS=2 \
+#     bash train_lora.sh 2 configs/cfg_odvg.py datasets/IRSTD.json output/exp_prompt_gen_app
+#
+# 11. HF-LoRA + 提示库 (两个创新点组合):
+#     USE_LORA=true USE_HF_LORA=true USE_PROMPT_BANK=true \
+#     bash train_lora.sh 2 configs/cfg_odvg.py datasets/IRSTD.json output/exp_hf_prompt
+#
+# 12. Baseline (禁用提示库，用于对比):
+#     USE_LORA=true USE_PROMPT_BANK=false bash train_lora.sh 2 configs/cfg_odvg.py datasets/IRSTD.json output/baseline
 # ============================================================
 
 export TOKENIZERS_PARALLELISM=false
@@ -74,20 +98,32 @@ MERGE_LORA=${MERGE_LORA:-"false"}
 
 # LoRA 目标层（所有要注入 LoRA 的层）
 # 默认覆盖 Backbone + Encoder/Decoder + Fusion + FFN
-# LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-"qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj v_proj l_proj values_v_proj values_l_proj out_v_proj out_l_proj linear1 linear2"}
-LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-"qkv query value v_proj values_v_proj values_proj"}
+LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-"qkv proj fc1 fc2 sampling_offsets attention_weights value_proj output_proj v_proj l_proj values_v_proj values_l_proj out_v_proj out_l_proj linear1 linear2"}
+# LORA_TARGET_MODULES=${LORA_TARGET_MODULES:-"qkv query value v_proj values_v_proj values_proj"}
 
 # 需要解冻的层（检测头等，不使用 LoRA 而是全量训练）
 LORA_UNFREEZE_LAYERS=${LORA_UNFREEZE_LAYERS:-"class_embed bbox_embed label_enc"}
 
 # ========================
-# HF-LoRA 参数（创新点）
+# HF-LoRA 参数（创新点 1）
 # ========================
 USE_HF_LORA=${USE_HF_LORA:-"false"}
 
 # HF-LoRA 目标层（在这些层使用高频增强，其余层使用标准 LoRA）
 # 默认只在 Backbone 的核心层使用 HF-LoRA
 HF_LORA_MODULES=${HF_LORA_MODULES:-"qkv fc1 fc2"}
+
+# ========================
+# 多粒度提示库参数（创新点 2）
+# ========================
+USE_PROMPT_BANK=${USE_PROMPT_BANK:-"false"}
+
+# 提示词类别 (Options: generic, appearance, physical, contextual, size_aware)
+# 默认：generic + appearance + physical
+PROMPT_CATEGORIES=${PROMPT_CATEGORIES:-"generic appearance physical"}
+
+# 每张图像采样的提示词数量
+NUM_SAMPLE_PROMPTS=${NUM_SAMPLE_PROMPTS:-3}
 
 # ========================
 # 训练控制参数
@@ -172,6 +208,18 @@ fi
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
+# ========== 多粒度提示库配置信息 =========
+if [ "$USE_LORA" = "true" ] && [ "$USE_PROMPT_BANK" = "true" ]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║         Multi-Granularity Prompt Bank (Innovation #2)    ║"
+    echo "╠══════════════════════════════════════════════════════════╣"
+    echo "║  Prompt Categories: $PROMPT_CATEGORIES"
+    echo "║  Num Sample Prompts: $NUM_SAMPLE_PROMPTS"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo ""
+fi
+
 # ============================================================
 # 构建命令
 # ============================================================
@@ -235,6 +283,13 @@ if [ "$USE_LORA" = "true" ]; then
     # ------ HF-LoRA 参数 ------
     if [ "$USE_HF_LORA" = "true" ]; then
         CMD="$CMD --hf_lora_modules ${HF_LORA_MODULES}"
+    fi
+
+    # ------ 多粒度提示库参数 (Innovation #2) ------
+    if [ "$USE_PROMPT_BANK" = "true" ]; then
+        CMD="$CMD --use_prompt_bank"
+        CMD="$CMD --prompt_categories ${PROMPT_CATEGORIES}"
+        CMD="$CMD --num_sample_prompts ${NUM_SAMPLE_PROMPTS}"
     fi
 fi
 
@@ -303,3 +358,7 @@ exit $EXIT_CODE
 # ```
 # USE_LORA=true CUDA_VISIBLE_DEVICES=3,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/no_lora_exp1_D
 # USE_LORA=true USE_HF_LORA=true CUDA_VISIBLE_DEVICES=2,3 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0312_exp1VA-HF_D
+USE_LORA=true USE_HF_LORA=true \
+HF_LORA_MODULES="qkv fc1 fc2" \
+CUDA_VISIBLE_DEVICES=3,1 \
+bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/exp_hf_prompt_combined

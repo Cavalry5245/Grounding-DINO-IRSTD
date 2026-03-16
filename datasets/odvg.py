@@ -8,6 +8,8 @@ import random
 import os, sys
 sys.path.append(os.path.dirname(sys.path[0]))
 
+from config.prompt_bank import PROMPT_BANK, DEFAULT_PROMPT_CATEGORIES, get_all_prompts
+
 import datasets.transforms as T
 
 class ODVGDataset(VisionDataset):
@@ -33,11 +35,24 @@ class ODVGDataset(VisionDataset):
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
         transforms: Optional[Callable] = None,
+        use_prompt_bank: bool = False,  # Enable multi-granularity prompt bank
+        prompt_categories: list = None,  # Categories to sample from
+        num_sample_prompts: int = 3,  # Number of prompts to sample per image
     ) -> None:
         super().__init__(root, transforms, transform, target_transform)
         self.root = root
         self.dataset_mode = "OD" if label_map_anno else "VG"
         self.max_labels = max_labels
+
+        # === Multi-Granularity Prompt Bank Configuration ===
+        self.use_prompt_bank = use_prompt_bank
+        self.prompt_categories = prompt_categories or DEFAULT_PROMPT_CATEGORIES
+        self.num_sample_prompts = num_sample_prompts
+
+        if self.use_prompt_bank:
+            print(f"  [Prompt Bank] Enabled with categories: {self.prompt_categories}")
+            print(f"  [Prompt Bank] Sample {self.num_sample_prompts} prompts per image")
+
         if self.dataset_mode == "OD":
             self.load_label_map(label_map_anno)
         self._load_metas(anno)
@@ -56,6 +71,37 @@ class ODVGDataset(VisionDataset):
         print(f"  == total images: {len(self)}")
         if self.dataset_mode == "OD":
             print(f"  == total labels: {len(self.label_map)}")
+
+    def _sample_prompts_from_bank(self, base_caption: str) -> list:
+        """
+        Sample prompts from the multi-granularity prompt bank.
+
+        Args:
+            base_caption: The original caption (e.g., "infrared small target")
+
+        Returns:
+            List of sampled prompt strings including the base caption.
+        """
+        if not self.use_prompt_bank:
+            return [base_caption]
+
+        # Collect all prompts from specified categories
+        all_prompts = get_all_prompts(self.prompt_categories)
+
+        # Ensure base caption is always included
+        if base_caption not in all_prompts:
+            all_prompts.append(base_caption)
+
+        # Randomly sample prompts
+        num_sample = min(self.num_sample_prompts, len(all_prompts))
+        sampled_prompts = random.sample(all_prompts, num_sample)
+
+        # Make sure base_caption is always in the result
+        if base_caption not in sampled_prompts:
+            # Replace a random one with base_caption
+            sampled_prompts[0] = base_caption
+
+        return sampled_prompts
 
     def __getitem__(self, index: int):
         meta = self.metas[index]
@@ -80,13 +126,26 @@ class ODVGDataset(VisionDataset):
             num_to_add = min(len(neg_labels), self.max_labels-len(pos_labels))
             if num_to_add > 0:
                 vg_labels.extend(random.sample(neg_labels, num_to_add))
-            
+
             # shuffle
             for i in range(len(vg_labels)-1, 0, -1):
                 j = random.randint(0, i)
                 vg_labels[i], vg_labels[j] = vg_labels[j], vg_labels[i]
 
             caption_list = [self.label_map[lb] for lb in vg_labels]
+
+            # === Multi-Granularity Prompt Bank Enhancement ===
+            if self.use_prompt_bank:
+                # Get base caption from label map (label "0" is typically the target class)
+                base_caption = self.label_map.get("0", "infrared small target")
+                # Sample additional prompts from prompt bank
+                sampled_prompts = self._sample_prompts_from_bank(base_caption)
+                # Add sampled prompts to caption_list (avoid duplicates)
+                for prompt in sampled_prompts:
+                    if prompt not in caption_list:
+                        caption_list.append(prompt)
+            # ================================================
+
             caption_dict = {item:index for index, item in enumerate(caption_list)}
 
             caption = ' . '.join(caption_list) + ' .'
@@ -231,9 +290,26 @@ def build_odvg(image_set, args, datasetinfo):
         strong_aug = args.strong_aug
     except:
         strong_aug = False
+
+    # Get prompt bank configuration from args
+    use_prompt_bank = getattr(args, 'use_prompt_bank', False)
+    prompt_categories = getattr(args, 'prompt_categories', None)
+    num_sample_prompts = getattr(args, 'num_sample_prompts', 3)
+
+    # Only enable prompt bank for training
+    if image_set != 'train':
+        use_prompt_bank = False
+
     print(img_folder, ann_file, label_map)
-    dataset = ODVGDataset(img_folder, ann_file, label_map, max_labels=args.max_labels,
-            transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args), 
+    dataset = ODVGDataset(
+        img_folder,
+        ann_file,
+        label_map,
+        max_labels=args.max_labels,
+        use_prompt_bank=use_prompt_bank,
+        prompt_categories=prompt_categories,
+        num_sample_prompts=num_sample_prompts,
+        transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args),
     )
     return dataset
 

@@ -5,7 +5,7 @@ data_aug_scales2_crop = [384, 600]
 data_aug_scale_overlap = None
 batch_size = 8
 modelname = 'groundingdino'
-backbone = 'swin_T_224_1k'  # "swin_B_384_22k"/"swin_T_224_1k"
+backbone = 'swin_T_224_1k'
 position_embedding = 'sine'
 pe_temperatureH = 20
 pe_temperatureW = 20
@@ -35,7 +35,7 @@ dn_bbox_coef = 1.0
 embed_init_tgt = True
 dn_labelbook_size = 2
 max_text_len = 256
-text_encoder_type = "/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased"  # "bert-base-uncased"
+text_encoder_type = '/media/sisu/X/hc/projects/Open-GroundingDino/weights/bert-base-uncased'
 use_text_enhancer = True
 use_fusion_layer = True
 use_checkpoint = True
@@ -45,18 +45,18 @@ text_dropout = 0.0
 fusion_dropout = 0.0
 fusion_droppath = 0.1
 sub_sentence_present = True
-max_labels = 50                               # pos + neg
-lr = 0.0001                                   # base learning rate
-backbone_freeze_keywords = None               # only for gdino backbone
-freeze_keywords = ['bert']                    # for whole model, e.g. ['backbone.0', 'bert'] for freeze visual encoder and text encoder
-lr_backbone = 1e-05                           # specific learning rate
+max_labels = 50
+lr = 0.0001
+backbone_freeze_keywords = None
+freeze_keywords = ['bert']
+lr_backbone = 1e-05
 lr_backbone_names = ['backbone.0', 'bert']
 lr_linear_proj_mult = 1e-05
 lr_linear_proj_names = ['ref_point_head', 'sampling_offsets']
 weight_decay = 0.0001
-param_dict_type = 'ddetr_in_mmdet'  # 使用自定义的 HR 和 Fusion 参数分组策略
-lr_hr_fusion = 1e-4                   # HR 分支和融合层的学习率
-lr_other = 1e-5                       # 其他层的学习率
+param_dict_type = 'ddetr_in_mmdet'
+lr_hr_fusion = 0.0001
+lr_other = 1e-05
 ddetr_lr_param = False
 epochs = 20
 lr_drop = 10
@@ -110,8 +110,6 @@ matcher_type = 'HungarianMatcher'
 decoder_module_seq = ['sa', 'ca', 'ffn']
 nms_iou_threshold = -1
 dec_pred_class_embed_share = True
-
-
 match_unstable_error = True
 use_ema = False
 ema_decay = 0.9997
@@ -119,21 +117,10 @@ ema_epoch = 0
 use_detached_boxes_dec_out = False
 use_coco_eval = False
 dn_scalar = 100
-label_list=['infrared small target']
-
-use_hr_branch = False        # 启用高分辨率分支
-hr_fusion_type = "cat"      # 融合方式："add" 或 "concat"
-freeze_swin = False         # 是否冻结 Swin 权重
-
-# ========== Multi-Granularity Prompt Bank Configuration ==========
-# 创新点 2: 语言空间数据增强 - 通过多粒度提示词库提升文本分支表达能力
-use_prompt_bank = True                      # 是否启用多粒度提示库
-prompt_categories = [                       # 使用的提示类别
-    "generic",       # 通用描述：infrared small target, small object, point target...
-    "appearance",    # 外观特征：bright spot, hot point, luminous dot...
-    "physical",      # 物理特性：heat source, thermal emitter, infrared radiation source...
-    # "contextual",  # 场景描述（可选）：small target in the sky...
-    # "size_aware",  # 尺寸感知（可选）：sub-pixel target, few-pixel target...
-]
-num_sample_prompts = 3                      # 每张图像采样多少个提示词
-# ================================================================
+label_list = ['infrared small target']
+use_hr_branch = False
+hr_fusion_type = 'cat'
+freeze_swin = False
+use_prompt_bank = True
+prompt_categories = ['generic', 'appearance', 'physical']
+num_sample_prompts = 3

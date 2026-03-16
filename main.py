@@ -133,6 +133,14 @@ def get_args_parser():
                         help='Modules to use HF-LoRA instead of standard LoRA. '
                              'Example: --hf_lora_modules qkv fc1 fc2 '
                              'If empty, all modules use standard LoRA.')
+    # # Multi-Granularity Prompt Bank parameters (创新点：语言空间数据增强)
+    # parser.add_argument('--use_prompt_bank', action='store_true', default=False,
+    #                     help='Enable multi-granularity prompt bank for text augmentation')
+    # parser.add_argument('--prompt_categories', type=str, nargs='+',
+    #                     default=['generic', 'appearance', 'physical'],
+    #                     help='Prompt categories to sample from. Options: generic, appearance, physical, contextual, size_aware')
+    # parser.add_argument('--num_sample_prompts', type=int, default=3,
+    #                     help='Number of prompts to sample per image from prompt bank')
 
     # Save options
     parser.add_argument('--save_best_only', action='store_true', default=True,
