@@ -1,0 +1,37 @@
+{
+  "time": "2026-01-29T21:36:38",
+  "cfg": {
+    "images_dir": "data/NUDT-SIRST/images/test",
+    "coco_gt": "data/NUDT-SIRST/annotations/test.json",
+    "config": "config/cfg_odvg.py",
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_nwd/0128_exp1_S/merged_model.pth",
+    "text_prompt": "Infrared small target",
+    "box_threshold": 0.001,
+    "text_threshold": 0.85,
+    "nms_threshold": 0.5,
+    "min_area": 0.0,
+    "max_area": 1e+18,
+    "v5_metric": false,
+    "force_single_class": false,
+    "output_dir": "eval_output/fanhua_with_sirst/NUDT-SIRST",
+    "save_pred_json": true,
+    "save_pr_curve_data": true
+  },
+  "metrics": {
+    "P": 0.9369135711554907,
+    "R": 0.9052631578947369,
+    "F1": 0.9208164718657996,
+    "mAP@0.5": 0.952456864040923,
+    "mAP@0.5:0.95": 0.41137568167044136,
+    "PD": 0.9052631578947369,
+    "FA": 0.08646616541353383,
+    "best_thres": 0.43743743743743746,
+    "TP": 344,
+    "FP_box": 23,
+    "FN": 36,
+    "GT": 380,
+    "n_images_eval": 266,
+    "_num_images_coco": 266,
+    "_missing_images": 0
+  }
+}

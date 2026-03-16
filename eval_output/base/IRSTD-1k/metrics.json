@@ -1,0 +1,36 @@
+{
+  "time": "2026-01-27T20:06:41",
+  "cfg": {
+    "images_dir": "data/IRSTD-1k/images/test",
+    "coco_gt": "data/IRSTD-1k/annotations/test.json",
+    "config": "config/cfg_odvg.py",
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth",
+    "text_prompt": "Infrared small target",
+    "box_threshold": 0.001,
+    "text_threshold": 0.85,
+    "nms_threshold": 0.5,
+    "min_area": 0.0,
+    "max_area": 1e+18,
+    "v5_metric": false,
+    "force_single_class": false,
+    "output_dir": "eval_output/base/IRSTD-1k",
+    "save_pred_json": true,
+    "save_pr_curve_data": true
+  },
+  "metrics": {
+    "P": 0.10961247254617179,
+    "R": 0.11258278145695365,
+    "F1": 0.11107777343838676,
+    "mAP@0.5": 0.019402248973030698,
+    "mAP@0.5:0.95": 0.0037081837192349714,
+    "PD": 0.11258278145695365,
+    "FA": 0.8903225806451613,
+    "best_thres": 0.2802802802802803,
+    "TP": 34,
+    "FP": 276,
+    "FN": 268,
+    "GT": 302,
+    "_num_images_coco": 201,
+    "_missing_images": 0
+  }
+}

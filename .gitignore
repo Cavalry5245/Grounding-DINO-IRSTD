@@ -172,10 +172,8 @@ cython_debug/
 *.pickle
 
 # 数据集
-data/
-datasets/
 *.csv
-*.json
+# *.json
 *.jsonl
 *.parquet
 *.feather
@@ -211,3 +209,6 @@ __pycache__/
 *.webp
 *.svg
 *.ico
+
+.claude/
+.vscode/

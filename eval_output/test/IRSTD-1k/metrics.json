@@ -1,0 +1,43 @@
+{
+  "time": "2026-03-13T15:42:37",
+  "cfg": {
+    "images_dir": "data/IRSTD-1k/images/test",
+    "coco_gt": "data/IRSTD-1k/annotations/test.json",
+    "config": "config/cfg_odvg.py",
+    "text_prompt": "Infrared small target",
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output/no_lora_exp1_K/checkpoint_best.pth",
+    "use_lora": false,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "lora_bias": "none",
+    "hf_lora_modules": [],
+    "box_threshold": 0.001,
+    "text_threshold": 0.85,
+    "nms_threshold": 0.5,
+    "min_area": 0.0,
+    "max_area": 1e+18,
+    "v5_metric": false,
+    "force_single_class": false,
+    "output_dir": "eval_output/test/IRSTD-1k",
+    "save_pred_json": true,
+    "save_pr_curve_data": true
+  },
+  "metrics": {
+    "P": 0.9630834581925877,
+    "R": 0.9502301477402663,
+    "F1": 0.9566136298062426,
+    "mAP@0.5": 0.9835614729994703,
+    "mAP@0.5:0.95": 0.9835614729994703,
+    "PD": 0.9470198675496688,
+    "FA": 0.05472636815920398,
+    "best_thres": 0.2952952952952953,
+    "TP": 286,
+    "FP_box": 11,
+    "FN": 16,
+    "GT": 302,
+    "n_images_eval": 201,
+    "_num_images_coco": 201,
+    "_missing_images": 0
+  }
+}

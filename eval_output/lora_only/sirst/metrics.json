@@ -1,0 +1,36 @@
+{
+  "time": "2026-01-28T14:55:09",
+  "cfg": {
+    "images_dir": "data/sirst/images/test",
+    "coco_gt": "data/sirst/annotations/test.json",
+    "config": "config/cfg_odvg.py",
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_only/0127_exp1_S/merged_model.pth",
+    "text_prompt": "Infrared small target",
+    "box_threshold": 0.001,
+    "text_threshold": 0.85,
+    "nms_threshold": 0.5,
+    "min_area": 0.0,
+    "max_area": 1e+18,
+    "v5_metric": false,
+    "force_single_class": false,
+    "output_dir": "eval_output/lora_only/sirst",
+    "save_pred_json": true,
+    "save_pr_curve_data": true
+  },
+  "metrics": {
+    "P": 0.9540982393033929,
+    "R": 0.9541284403669725,
+    "F1": 0.9541133395961902,
+    "mAP@0.5": 0.9396465308511421,
+    "mAP@0.5:0.95": 0.5078027910575005,
+    "PD": 0.9541284403669725,
+    "FA": 0.045871559633027525,
+    "best_thres": 0.4994994994994995,
+    "TP": 104,
+    "FP": 5,
+    "FN": 5,
+    "GT": 109,
+    "_num_images_coco": 86,
+    "_missing_images": 0
+  }
+}

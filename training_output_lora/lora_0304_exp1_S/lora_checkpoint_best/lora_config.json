@@ -1,0 +1,30 @@
+{
+  "r": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "lora_bias": "none",
+  "target_modules": [
+    "qkv",
+    "proj",
+    "fc1",
+    "fc2",
+    "sampling_offsets",
+    "attention_weights",
+    "value_proj",
+    "output_proj",
+    "v_proj",
+    "l_proj",
+    "values_v_proj",
+    "values_l_proj",
+    "out_v_proj",
+    "out_l_proj",
+    "linear1",
+    "linear2"
+  ],
+  "hf_lora_modules": [],
+  "lora_unfreeze_layers": [
+    "class_embed",
+    "bbox_embed",
+    "label_enc"
+  ]
+}

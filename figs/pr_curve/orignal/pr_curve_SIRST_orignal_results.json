@@ -1,0 +1,20 @@
+{
+  "config": {
+    "center_hit": true,
+    "iou_thresh": 0.1,
+    "total_gt_count": 533,
+    "total_image_count": 427
+  },
+  "methods": {
+    "original": {
+      "ap": 0.882101933781801,
+      "best_f1_score": 0.8176470538336986,
+      "best_precision": 0.8562628336755647,
+      "best_recall": 0.7823639774859287,
+      "best_score_threshold": 0.17556557059288025,
+      "total_tp": 533,
+      "total_fp": 69582,
+      "total_fn": 0
+    }
+  }
+}

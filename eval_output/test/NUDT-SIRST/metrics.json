@@ -1,0 +1,48 @@
+{
+  "time": "2026-03-12T19:01:20",
+  "cfg": {
+    "images_dir": "data/NUDT-SIRST/images/test",
+    "coco_gt": "data/NUDT-SIRST/annotations/test.json",
+    "config": "config/cfg_odvg.py",
+    "text_prompt": "small object",
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth",
+    "use_lora": true,
+    "lora_checkpoint": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/lora_0312_exp1VA-HF_D/lora_checkpoint_best",
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "lora_bias": "none",
+    "hf_lora_modules": [
+      "qkv",
+      "fc1",
+      "fc2"
+    ],
+    "box_threshold": 0.001,
+    "text_threshold": 0.85,
+    "nms_threshold": 0.5,
+    "min_area": 0.0,
+    "max_area": 1e+18,
+    "v5_metric": false,
+    "force_single_class": false,
+    "output_dir": "eval_output/test/NUDT-SIRST",
+    "save_pred_json": true,
+    "save_pr_curve_data": true
+  },
+  "metrics": {
+    "P": 0.9779983253496455,
+    "R": 0.9605263157894737,
+    "F1": 0.9691835825665462,
+    "mAP@0.5": 0.9840154616325991,
+    "mAP@0.5:0.95": 0.9840154616325989,
+    "PD": 0.9605263157894737,
+    "FA": 0.03007518796992481,
+    "best_thres": 0.3713713713713714,
+    "TP": 365,
+    "FP_box": 8,
+    "FN": 15,
+    "GT": 380,
+    "n_images_eval": 266,
+    "_num_images_coco": 266,
+    "_missing_images": 0
+  }
+}

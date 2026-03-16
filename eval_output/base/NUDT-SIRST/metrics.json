@@ -1,0 +1,36 @@
+{
+  "time": "2026-01-27T19:54:35",
+  "cfg": {
+    "images_dir": "data/NUDT-SIRST/images/test",
+    "coco_gt": "data/NUDT-SIRST/annotations/test.json",
+    "config": "config/cfg_odvg.py",
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth",
+    "text_prompt": "Infrared small target",
+    "box_threshold": 0.001,
+    "text_threshold": 0.85,
+    "nms_threshold": 0.5,
+    "min_area": 0.0,
+    "max_area": 1e+18,
+    "v5_metric": false,
+    "force_single_class": false,
+    "output_dir": "eval_output/base/NUDT-SIRST",
+    "save_pred_json": true,
+    "save_pr_curve_data": true
+  },
+  "metrics": {
+    "P": 0.05637479207055499,
+    "R": 0.20526315789473684,
+    "F1": 0.08845557647578532,
+    "mAP@0.5": 0.016317214310243154,
+    "mAP@0.5:0.95": 0.004287959255163135,
+    "PD": 0.20526315789473684,
+    "FA": 0.9436008676789588,
+    "best_thres": 0.0990990990990991,
+    "TP": 78,
+    "FP": 1305,
+    "FN": 302,
+    "GT": 380,
+    "_num_images_coco": 266,
+    "_missing_images": 0
+  }
+}

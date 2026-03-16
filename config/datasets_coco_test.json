@@ -1,0 +1,19 @@
+{
+  "train": [
+    {
+      "root": "",
+      "anno": "",
+      "label_map": "",
+      "dataset_mode": "odvg"
+    }
+  ],
+  "val": [
+    {
+      "root": "/media/sisu/X/hc/projects/Open-GroundingDino/data/SIRST/images/test",
+      "anno": "/media/sisu/X/hc/projects/Open-GroundingDino/data/SIRST/annotations/test.json",
+      "label_map": null,
+      "dataset_mode": "coco"
+    }
+
+  ]
+}

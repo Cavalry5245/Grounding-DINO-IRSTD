@@ -1,0 +1,43 @@
+{
+  "time": "2026-03-12T22:39:23",
+  "cfg": {
+    "images_dir": "data/NUDT-SIRST/images/test",
+    "coco_gt": "data/NUDT-SIRST/annotations/test.json",
+    "config": "config/cfg_odvg.py",
+    "text_prompt": "Infrared small target",
+    "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output/no_lora_exp1_D/checkpoint_best.pth",
+    "use_lora": false,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "lora_bias": "none",
+    "hf_lora_modules": [],
+    "box_threshold": 0.001,
+    "text_threshold": 0.85,
+    "nms_threshold": 0.5,
+    "min_area": 0.0,
+    "max_area": 1e+18,
+    "v5_metric": false,
+    "force_single_class": false,
+    "output_dir": "eval_output/test/NUDT-SIRST2",
+    "save_pred_json": true,
+    "save_pr_curve_data": true
+  },
+  "metrics": {
+    "P": 0.9947228819715804,
+    "R": 0.9920914697533643,
+    "F1": 0.9934054332914425,
+    "mAP@0.5": 0.9948541416895381,
+    "mAP@0.5:0.95": 0.9948541416895381,
+    "PD": 0.9894736842105263,
+    "FA": 0.007518796992481203,
+    "best_thres": 0.2872872872872873,
+    "TP": 376,
+    "FP_box": 2,
+    "FN": 4,
+    "GT": 380,
+    "n_images_eval": 266,
+    "_num_images_coco": 266,
+    "_missing_images": 0
+  }
+}

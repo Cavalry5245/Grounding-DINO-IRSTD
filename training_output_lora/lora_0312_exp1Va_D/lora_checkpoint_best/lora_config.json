@@ -1,0 +1,20 @@
+{
+  "r": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "lora_bias": "none",
+  "target_modules": [
+    "qkv",
+    "query",
+    "value",
+    "v_proj",
+    "values_v_proj",
+    "values_proj"
+  ],
+  "hf_lora_modules": [],
+  "lora_unfreeze_layers": [
+    "class_embed",
+    "bbox_embed",
+    "label_enc"
+  ]
+}
