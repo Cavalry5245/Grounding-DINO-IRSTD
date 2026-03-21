@@ -358,7 +358,6 @@ exit $EXIT_CODE
 # ```
 # USE_LORA=true CUDA_VISIBLE_DEVICES=3,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output/no_lora_exp1_D
 # USE_LORA=true USE_HF_LORA=true CUDA_VISIBLE_DEVICES=2,3 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/lora_0312_exp1VA-HF_D
-USE_LORA=true USE_HF_LORA=true \
-HF_LORA_MODULES="qkv fc1 fc2" \
-CUDA_VISIBLE_DEVICES=3,1 \
-bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/exp_hf_prompt_combined
+# USE_LORA=true USE_HF_LORA=true HF_LORA_MODULES="qkv fc1 fc2" CUDA_VISIBLE_DEVICES=0,1 bash train_lora.sh 2 ./config/cfg_odvg.py ./config/datasets_mixed_odvg.json ./training_output_lora/exp1_hf_prompt_combined_D
+
+

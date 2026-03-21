@@ -37,7 +37,7 @@ CFG = {
     # 模式 B：未合并的 LoRA 权重
     "weights": "/media/sisu/X/hc/projects/Open-GroundingDino/weights/groundingdino_swint_ogc.pth",
     "use_lora": True,
-    "lora_checkpoint": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/exp1_hf_prompt_combined/lora_checkpoint_best",
+    "lora_checkpoint": "/media/sisu/X/hc/projects/Open-GroundingDino/training_output_lora/exp1_hf_prompt_combined_K/lora_checkpoint_best",
 
     # ==================== LoRA 配置 ====================
     # 如果 lora_checkpoint 目录中有 lora_config.json，以下参数会被自动覆盖
@@ -75,7 +75,7 @@ CFG = {
     "force_single_class": False,
 
     # ==================== output ====================
-    "output_dir": "eval_output/test/IRSTD-1k3",
+    "output_dir": "eval_output/test/IRSTD-1k4",
     "save_pred_json": True,
     "save_pr_curve_data": True,
 }
